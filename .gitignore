@@ -1,0 +1,12 @@
+/weights/policy_storage/
+/weights/policy_dump/
+/data/
+/.ipynb_checkpoints/
+/profile_storage/
+/wandb/
+/test_results/
+/lib/models/pretrained/
+/sweep_configs/
+/log/
+/gifs/
+/results/data/
