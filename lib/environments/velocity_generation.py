@@ -27,6 +27,10 @@ class VelocityFieldGenerator:
             c_y = - np.sin(np.pi * self.Y) ** 2 * np.sin(2 * np.pi * self.X)
             return np.float32(sign * abs_velocity * c_x), np.float32(sign * abs_velocity * c_y)
 
+        elif self.velocity_field_type == "translational":
+            shape = self.img_size, self.img_size
+            return np.ones(shape), np.ones(shape)
+
         elif self.velocity_field_type == "train":
             # create linear combination of Taylor-Green vortices
             num_ks = random.randint(1, 4)
