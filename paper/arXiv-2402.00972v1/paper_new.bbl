@@ -1,0 +1,255 @@
+\begin{thebibliography}{49}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Albrecht et~al.(2023)Albrecht, Christianos, and Sch{\"a}fer]{albrecht2023multi}
+Albrecht, S.~V., Christianos, F., and Sch{\"a}fer, L.
+\newblock Multi-agent reinforcement learning: Foundations and modern approaches.
+\newblock \emph{Massachusetts Institute of Technology: Cambridge, MA, USA}, 2023.
+
+\bibitem[Bae \& Koumoutsakos(2022)Bae and Koumoutsakos]{bae2022scientific}
+Bae, H.~J. and Koumoutsakos, P.
+\newblock Scientific multi-agent reinforcement learning for wall-models of turbulent flows.
+\newblock \emph{Nature Communications}, 13\penalty0 (1):\penalty0 1443, 2022.
+
+\bibitem[Bergdorf et~al.(2005)Bergdorf, Cottet, and Koumoutsakos]{bergdorf2005multilevel}
+Bergdorf, M., Cottet, G.-H., and Koumoutsakos, P.
+\newblock Multilevel adaptive particle methods for convection-diffusion equations.
+\newblock \emph{Multiscale Modeling \& Simulation}, 4\penalty0 (1):\penalty0 328--357, 2005.
+
+\bibitem[Brandstetter et~al.(2023)Brandstetter, Berg, Welling, and Gupta]{brandstetter2022clifford}
+Brandstetter, J., Berg, R. v.~d., Welling, M., and Gupta, J.~K.
+\newblock Clifford neural layers for pde modeling.
+\newblock \emph{ICLR}, 2023.
+
+\bibitem[Council(2012)]{climatenas}
+Council, N.~R.
+\newblock \emph{A National Strategy for Advancing Climate Modeling}.
+\newblock The National Academies Press, 2012.
+
+\bibitem[Courant et~al.(1928)Courant, Friedrichs, and Lewy]{Courant_1928}
+Courant, R., Friedrichs, K., and Lewy, H.
+\newblock \"{U}ber die partiellen differenzengleichungen der mathematischen physik.
+\newblock \emph{Mathematische Annalen}, 100\penalty0 (1):\penalty0 32--74, December 1928.
+\newblock \doi{10.1007/BF01448839}.
+\newblock URL \url{http://dx.doi.org/10.1007/BF01448839}.
+
+\bibitem[Cranmer et~al.(2020)Cranmer, Greydanus, Hoyer, Battaglia, Spergel, and Ho]{cranmer2020lagrangian}
+Cranmer, M., Greydanus, S., Hoyer, S., Battaglia, P., Spergel, D., and Ho, S.
+\newblock Lagrangian neural networks.
+\newblock \emph{arXiv preprint arXiv:2003.04630}, 2020.
+
+\bibitem[Deng(2012)]{mnist}
+Deng, L.
+\newblock The mnist database of handwritten digit images for machine learning research.
+\newblock \emph{IEEE Signal Processing Magazine}, 29\penalty0 (6):\penalty0 141--142, 2012.
+
+\bibitem[Dura-Bernal et~al.(2019)Dura-Bernal, Suter, Gleeson, Cantarelli, Quintana, Rodriguez, Kedziora, Chadderdon, Kerr, Neymotin, et~al.]{dura2019netpyne}
+Dura-Bernal, S., Suter, B.~A., Gleeson, P., Cantarelli, M., Quintana, A., Rodriguez, F., Kedziora, D.~J., Chadderdon, G.~L., Kerr, C.~C., Neymotin, S.~A., et~al.
+\newblock Netpyne, a tool for data-driven multiscale modeling of brain circuits.
+\newblock \emph{Elife}, 8:\penalty0 e44494, 2019.
+
+\bibitem[Durbin(2018)]{durbin2018some}
+Durbin, P.~A.
+\newblock Some recent developments in turbulence closure modeling.
+\newblock \emph{Annual Review of Fluid Mechanics}, 50:\penalty0 77--103, 2018.
+
+\bibitem[Freed et~al.(2021)Freed, Kapoor, Abraham, Schneider, and Choset]{freed2021learning}
+Freed, B., Kapoor, A., Abraham, I., Schneider, J., and Choset, H.
+\newblock Learning cooperative multi-agent policies with partial reward decoupling.
+\newblock \emph{IEEE Robotics and Automation Letters}, 7\penalty0 (2):\penalty0 890--897, 2021.
+
+\bibitem[Furuta et~al.(2019)Furuta, Inoue, and Yamasaki]{cv_pixel_rl}
+Furuta, R., Inoue, N., and Yamasaki, T.
+\newblock Pixelrl: Fully convolutional network with reinforcement learning for image processing, 2019.
+
+\bibitem[Goyal \& Bengio(2022)Goyal and Bengio]{goyal2022inductive}
+Goyal, A. and Bengio, Y.
+\newblock Inductive biases for deep learning of higher-level cognition.
+\newblock \emph{Proceedings of the Royal Society A}, 478\penalty0 (2266):\penalty0 20210068, 2022.
+
+\bibitem[Greydanus et~al.(2019)Greydanus, Dzamba, and Yosinski]{greydanus2019hamiltonian}
+Greydanus, S., Dzamba, M., and Yosinski, J.
+\newblock Hamiltonian neural networks.
+\newblock \emph{Advances in neural information processing systems}, 32, 2019.
+
+\bibitem[Gupta \& Brandstetter(2022)Gupta and Brandstetter]{gupta2022towards}
+Gupta, J.~K. and Brandstetter, J.
+\newblock Towards multi-spatiotemporal-scale generalized pde modeling.
+\newblock \emph{arXiv preprint arXiv:2209.15616}, 2022.
+
+\bibitem[Hey(2009)]{hey2009fourth}
+Hey, T.
+\newblock \emph{The fourth paradigm}.
+\newblock United States of America., 2009.
+
+\bibitem[Kaltenbach \& Koutsourelakis(2020)Kaltenbach and Koutsourelakis]{kaltenbach2020incorporating}
+Kaltenbach, S. and Koutsourelakis, P.-S.
+\newblock Incorporating physical constraints in a deep probabilistic machine learning framework for coarse-graining dynamical systems.
+\newblock \emph{Journal of Computational Physics}, 419:\penalty0 109673, 2020.
+
+\bibitem[Kaltenbach \& Koutsourelakis(2021)Kaltenbach and Koutsourelakis]{kaltenbach2021physics}
+Kaltenbach, S. and Koutsourelakis, P.-S.
+\newblock Physics-aware, probabilistic model order reduction with guaranteed stability.
+\newblock \emph{ICLR}, 2021.
+
+\bibitem[Kaltenbach et~al.(2023)Kaltenbach, Perdikaris, and Koutsourelakis]{kaltenbach2023semi}
+Kaltenbach, S., Perdikaris, P., and Koutsourelakis, P.-S.
+\newblock Semi-supervised invertible neural operators for bayesian inverse problems.
+\newblock \emph{Computational Mechanics}, pp.\  1--20, 2023.
+
+\bibitem[Karnakov et~al.(2022)Karnakov, Litvinov, and Koumoutsakos]{karnakov2022optimizing}
+Karnakov, P., Litvinov, S., and Koumoutsakos, P.
+\newblock Optimizing a discrete loss (odil) to solve forward and inverse problems for partial differential equations using machine learning tools.
+\newblock \emph{arXiv preprint arXiv:2205.04611}, 2022.
+
+\bibitem[Karniadakis et~al.(2021)Karniadakis, Kevrekidis, Lu, Perdikaris, Wang, and Yang]{karniadakis2021physics}
+Karniadakis, G.~E., Kevrekidis, I.~G., Lu, L., Perdikaris, P., Wang, S., and Yang, L.
+\newblock Physics-informed machine learning.
+\newblock \emph{Nature Reviews Physics}, 3\penalty0 (6):\penalty0 422--440, 2021.
+
+\bibitem[Li et~al.(2020)Li, Kovachki, Azizzadenesheli, Liu, Bhattacharya, Stuart, and Anandkumar]{li2020fourier}
+Li, Z., Kovachki, N., Azizzadenesheli, K., Liu, B., Bhattacharya, K., Stuart, A., and Anandkumar, A.
+\newblock Fourier neural operator for parametric partial differential equations.
+\newblock \emph{arXiv preprint arXiv:2010.08895}, 2020.
+
+\bibitem[Ling et~al.(2016)Ling, Kurzawski, and Templeton]{ling2016reynolds}
+Ling, J., Kurzawski, A., and Templeton, J.
+\newblock Reynolds averaged turbulence modelling using deep neural networks with embedded invariance.
+\newblock \emph{Journal of Fluid Mechanics}, 807:\penalty0 155--166, 2016.
+
+\bibitem[Lippe et~al.(2023)Lippe, Veeling, Perdikaris, Turner, and Brandstetter]{lippe2023pde}
+Lippe, P., Veeling, B.~S., Perdikaris, P., Turner, R.~E., and Brandstetter, J.
+\newblock Pde-refiner: Achieving accurate long rollouts with neural pde solvers.
+\newblock \emph{arXiv preprint arXiv:2308.05732}, 2023.
+
+\bibitem[Long et~al.(2015)Long, Shelhamer, and Darrell]{fcn}
+Long, J., Shelhamer, E., and Darrell, T.
+\newblock Fully convolutional networks for semantic segmentation, 2015.
+
+\bibitem[Lu et~al.(2021)Lu, Jin, Pang, Zhang, and Karniadakis]{lu2021learning}
+Lu, L., Jin, P., Pang, G., Zhang, Z., and Karniadakis, G.~E.
+\newblock Learning nonlinear operators via deeponet based on the universal approximation theorem of operators.
+\newblock \emph{Nature machine intelligence}, 3\penalty0 (3):\penalty0 218--229, 2021.
+
+\bibitem[Mahadevan(2016)]{mahadevan2016impact}
+Mahadevan, A.
+\newblock The impact of submesoscale physics on primary productivity of plankton.
+\newblock \emph{Annual review of marine science}, 8:\penalty0 161--184, 2016.
+
+\bibitem[Novati et~al.(2019)Novati, Mahadevan, and Koumoutsakos]{novati2019}
+Novati, G., Mahadevan, L., and Koumoutsakos, P.
+\newblock Controlled gliding and perching through deep-reinforcement-learning.
+\newblock \emph{Physical Review Fluids}, 4\penalty0 (9):\penalty0 093902, 2019.
+
+\bibitem[Novati et~al.(2021)Novati, de~Laroussilhe, and Koumoutsakos]{novati2021automating}
+Novati, G., de~Laroussilhe, H.~L., and Koumoutsakos, P.
+\newblock Automating turbulence modelling by multi-agent reinforcement learning.
+\newblock \emph{Nature Machine Intelligence}, 3\penalty0 (1):\penalty0 87--96, 2021.
+
+\bibitem[Peng et~al.(2021)Peng, Alber, Buganza~Tepole, Cannon, De, Dura-Bernal, Garikipati, Karniadakis, Lytton, Perdikaris, et~al.]{peng2021multiscale}
+Peng, G.~C., Alber, M., Buganza~Tepole, A., Cannon, W.~R., De, S., Dura-Bernal, S., Garikipati, K., Karniadakis, G., Lytton, W.~W., Perdikaris, P., et~al.
+\newblock Multiscale modeling meets machine learning: What can we learn?
+\newblock \emph{Archives of Computational Methods in Engineering}, 28:\penalty0 1017--1037, 2021.
+
+\bibitem[Quarteroni \& Valli(2008)Quarteroni and Valli]{quarteroni2008numerical}
+Quarteroni, A. and Valli, A.
+\newblock \emph{Numerical approximation of partial differential equations}, volume~23.
+\newblock Springer Science \& Business Media, 2008.
+
+\bibitem[Raissi et~al.(2019)Raissi, Perdikaris, and Karniadakis]{raissi2019physics}
+Raissi, M., Perdikaris, P., and Karniadakis, G.~E.
+\newblock Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations.
+\newblock \emph{Journal of Computational physics}, 378:\penalty0 686--707, 2019.
+
+\bibitem[Rossinelli et~al.(2013)Rossinelli, Hejazialhosseini, Hadjidoukas, Bekas, Curioni, Bertsch, Futral, Schmidt, Adams, and Koumoutsakos]{rossinelli2013a}
+Rossinelli, D., Hejazialhosseini, B., Hadjidoukas, P., Bekas, C., Curioni, A., Bertsch, A., Futral, S., Schmidt, S.~J., Adams, N.~A., and Koumoutsakos, P.
+\newblock 11 {PFLOP/s} simulations of cloud cavitation collapse.
+\newblock In \emph{Proceedings of the International Conference on High Performance Computing, Networking, Storage and Analysis}, SC '13, pp.\  3:1--3:13, New York, NY, USA, 2013. ACM.
+\newblock ISBN 978-1-4503-2378-9.
+\newblock \doi{10.1145/2503210.2504565}.
+\newblock URL \url{http://doi.acm.org/10.1145/2503210.2504565}.
+
+\bibitem[Schulman et~al.(2017)Schulman, Wolski, Dhariwal, Radford, and Klimov]{ppo}
+Schulman, J., Wolski, F., Dhariwal, P., Radford, A., and Klimov, O.
+\newblock Proximal policy optimization algorithms.
+\newblock \emph{CoRR}, abs/1707.06347, 2017.
+\newblock URL \url{http://arxiv.org/abs/1707.06347}.
+
+\bibitem[Schulman et~al.(2018)Schulman, Moritz, Levine, Jordan, and Abbeel]{generalized_advantage_estimation}
+Schulman, J., Moritz, P., Levine, S., Jordan, M., and Abbeel, P.
+\newblock High-dimensional continuous control using generalized advantage estimation, 2018.
+
+\bibitem[Seidman et~al.(2022)Seidman, Kissas, Perdikaris, and Pappas]{seidman2022nomad}
+Seidman, J., Kissas, G., Perdikaris, P., and Pappas, G.~J.
+\newblock Nomad: Nonlinear manifold decoders for operator learning.
+\newblock \emph{Advances in Neural Information Processing Systems}, 35:\penalty0 5601--5613, 2022.
+
+\bibitem[Sutton \& Barto(2018)Sutton and Barto]{sutton2018reinforcement}
+Sutton, R.~S. and Barto, A.~G.
+\newblock \emph{Reinforcement learning: An introduction}.
+\newblock MIT press, 2018.
+
+\bibitem[Sutton et~al.(2023)Sutton, Machado, Holland, Szepesvari, Timbers, Tanner, and White]{sutton2023reward}
+Sutton, R.~S., Machado, M.~C., Holland, G.~Z., Szepesvari, D., Timbers, F., Tanner, B., and White, A.
+\newblock Reward-respecting subtasks for model-based reinforcement learning.
+\newblock \emph{Artificial Intelligence}, 324:\penalty0 104001, 2023.
+
+\bibitem[Uchendu et~al.(2023)Uchendu, Xiao, Lu, Zhu, Yan, Simon, Bennice, Fu, Ma, Jiao, et~al.]{uchendu2023jump}
+Uchendu, I., Xiao, T., Lu, Y., Zhu, B., Yan, M., Simon, J., Bennice, M., Fu, C., Ma, C., Jiao, J., et~al.
+\newblock Jump-start reinforcement learning.
+\newblock In \emph{International Conference on Machine Learning}, pp.\  34556--34583. PMLR, 2023.
+
+\bibitem[Walke et~al.(2023)Walke, Yang, Yu, Kumar, Orbik, Singh, and Levine]{walke2023don}
+Walke, H.~R., Yang, J.~H., Yu, A., Kumar, A., Orbik, J., Singh, A., and Levine, S.
+\newblock Don’t start from scratch: Leveraging prior data to automate robotic reinforcement learning.
+\newblock In \emph{Conference on Robot Learning}, pp.\  1652--1662. PMLR, 2023.
+
+\bibitem[Wang et~al.(2021)Wang, Wang, and Perdikaris]{wang2021learning}
+Wang, S., Wang, H., and Perdikaris, P.
+\newblock Learning the solution operator of parametric partial differential equations with physics-informed deeponets.
+\newblock \emph{Science advances}, 7\penalty0 (40):\penalty0 eabi8605, 2021.
+
+\bibitem[Wang et~al.(2022)Wang, Sankaran, and Perdikaris]{wang2022respecting}
+Wang, S., Sankaran, S., and Perdikaris, P.
+\newblock Respecting causality is all you need for training physics-informed neural networks.
+\newblock \emph{arXiv preprint arXiv:2203.07404}, 2022.
+
+\bibitem[Wen et~al.(2022)Wen, Kuba, Lin, Zhang, Wen, Wang, and Yang]{wen2022multi}
+Wen, M., Kuba, J., Lin, R., Zhang, W., Wen, Y., Wang, J., and Yang, Y.
+\newblock Multi-agent reinforcement learning is a sequence modeling problem.
+\newblock \emph{Advances in Neural Information Processing Systems}, 35:\penalty0 16509--16521, 2022.
+
+\bibitem[Weng et~al.(2022)Weng, Chen, Yan, You, Duburcq, Zhang, Su, Su, and Zhu]{tianshou}
+Weng, J., Chen, H., Yan, D., You, K., Duburcq, A., Zhang, M., Su, Y., Su, H., and Zhu, J.
+\newblock Tianshou: A highly modularized deep reinforcement learning library.
+\newblock \emph{Journal of Machine Learning Research}, 23\penalty0 (267):\penalty0 1--6, 2022.
+\newblock URL \url{http://jmlr.org/papers/v23/21-1127.html}.
+
+\bibitem[Wilcox(1988)]{wilcox1988multiscale}
+Wilcox, D.~C.
+\newblock Multiscale model for turbulent flows.
+\newblock \emph{AIAA journal}, 26\penalty0 (11):\penalty0 1311--1320, 1988.
+
+\bibitem[Xiao et~al.(2017)Xiao, Rasul, and Vollgraf]{fashionmnist}
+Xiao, H., Rasul, K., and Vollgraf, R.
+\newblock Fashion-mnist: a novel image dataset for benchmarking machine learning algorithms, 2017.
+
+\bibitem[Yang \& Wang(2020)Yang and Wang]{yang2020overview}
+Yang, Y. and Wang, J.
+\newblock An overview of multi-agent reinforcement learning from game theoretical perspective.
+\newblock \emph{arXiv preprint arXiv:2011.00583}, 2020.
+
+\bibitem[Yin et~al.(2021)Yin, Le~Guen, Dona, de~B{\'e}zenac, Ayed, Thome, and Gallinari]{yin2021augmenting}
+Yin, Y., Le~Guen, V., Dona, J., de~B{\'e}zenac, E., Ayed, I., Thome, N., and Gallinari, P.
+\newblock Augmenting physical models with deep networks for complex dynamics forecasting.
+\newblock \emph{Journal of Statistical Mechanics: Theory and Experiment}, 2021\penalty0 (12):\penalty0 124012, 2021.
+
+\bibitem[Zhang et~al.(2017)Zhang, Zuo, Gu, and Zhang]{ircnn}
+Zhang, K., Zuo, W., Gu, S., and Zhang, L.
+\newblock Learning deep cnn denoiser prior for image restoration, 2017.
+
+\end{thebibliography}
