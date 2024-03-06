@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 from lib.environments import BurgersEnvironment
 from lib.models import BurgersIRCNN
 from lib.models.wrappers import MarlModel

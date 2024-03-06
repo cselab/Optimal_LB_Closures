@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 from lib.environments import AdvectionEnvironment
 from lib.models import AdvectionIRCNN
 from lib.models.wrappers import MarlModel
