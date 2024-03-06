@@ -1,15 +1,9 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 from lib.environments import AdvectionEnvironment
 from lib.models import AdvectionIRCNN
 from lib.models.wrappers import MarlModel
 from tianshou.utils.net.common import ActorCritic
 from lib.policy.ppo import MarlPPOPolicy
 from lib.distributions import ElementwiseNormal
-
 import torch
 import math
 import numpy as np
@@ -17,27 +11,26 @@ from tqdm import tqdm
 from copy import deepcopy
 import pickle
 import os
-
-# Plotting settings
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 FONT_SIZE = 16
 FIG_SIZE = (4, 3.5)
 plt.rcParams['figure.figsize'] = FIG_SIZE
-# Set global font size
 plt.rcParams['font.size'] = FONT_SIZE
 plt.rcParams['axes.labelsize'] = FONT_SIZE
 plt.rcParams['xtick.labelsize'] = FONT_SIZE
 plt.rcParams['ytick.labelsize'] = FONT_SIZE
 plt.rcParams['legend.fontsize'] = 12
-
-# This serves to assure Type 1 fonts
 plt.rcParams['text.usetex'] = False
 plt.rcParams['pdf.use14corefonts'] = True
 plt.rcParams['ps.useafm'] = True
-
-# In[ ]:
+method_color = {
+    "CGS": "red",
+    "ACGS": "orange",
+    "FGS": "green",
+    "CNN-MARL": "blue"
+}
 
 
 def plot_n(ims, titles=None):
@@ -48,16 +41,6 @@ def plot_n(ims, titles=None):
         if titles:
             ax.set_title(titles[i])
     plt.show()
-
-
-method_color = {
-    "CGS": "red",
-    "ACGS": "orange",
-    "FGS": "green",
-    "CNN-MARL": "blue"
-}
-
-# In[ ]:
 
 
 class Collector:
@@ -130,21 +113,13 @@ def load_col(path):
         return loaded_data
 
 
-# In[ ]:
-
-DEVICE = "cuda:0"
+DEVICE = "cpu"
 backbone = AdvectionIRCNN()
 actor = MarlModel(backbone=backbone, _is="actor").to(DEVICE)
 critic = MarlModel(backbone=backbone, _is="critic").to(DEVICE)
 actor_critic = ActorCritic(actor, critic)
-
-# In[ ]:
-
 EPOCH = 1499  # Load EPOCH=1499 for best model
 POLICY_READ_PATH = f'./weights/policy_launch_platform/mnist_train_ppo_IRCNN_eplen:4_seed:0_subsample:4_discount:0.95_growing_ep_len_maxed/policy_ep{EPOCH}.pt'
-
-# In[ ]:
-
 dist = ElementwiseNormal
 ElementwiseNormal.marl = True
 policy = MarlPPOPolicy(actor=actor_critic.actor,
@@ -155,28 +130,18 @@ policy = MarlPPOPolicy(actor=actor_critic.actor,
 policy.load_state_dict(
     torch.load(POLICY_READ_PATH, map_location=torch.device(DEVICE)))
 print("Built model")
-
-# In[ ]:
-
 DATA_SET_NAME = "mnist"
 VEL_FIELD_TYPE = "train"
-
 FIG_PATH = f'results_dump/figures/advection/'
 SAVE_PATH = f'results_dump/data/advection/'
 LOAD_PATH = f'results/data/advection/'
-
 os.makedirs(os.path.dirname(FIG_PATH), exist_ok=True)
 os.makedirs(os.path.dirname(SAVE_PATH), exist_ok=True)
-
 env = AdvectionEnvironment(ep_len=10,
                            train=False,
                            img_size=64,
                            dataset_name=DATA_SET_NAME,
                            velocity_field_type=VEL_FIELD_TYPE)
-
-# # Simulation
-
-# In[ ]:
 
 
 def get_action(actor, deterministic, obs):
@@ -206,8 +171,6 @@ def run_simulation(num_steps=100, do_plot=False, deterministic=True):
                                 env.c_x,
                                 env.c_y,
                                 space_disc="second_order_upwind")
-
-        # Plot state every 50 steps
         if i % 50 == 0 and do_plot:
             print(f"Num CGS steps: {i}")
             base = "$\widetilde{\psi}^{" + str(i) + "}"
@@ -224,78 +187,41 @@ def run_simulation(num_steps=100, do_plot=False, deterministic=True):
     return gt, env.state, no_rl, no_rl_gt, act_mean
 
 
-# ## Qualitative Results
-
-# In[ ]:
-
 _ = run_simulation(200, do_plot=True)
-
-# ## Multiple Simulations for Quantitative Results
-
-# In[ ]:
-
 NUM_SIMS = 2
 NUM_STEPS = 50
-
 col = Collector([
     "s_no_rl", "s_rl", "s_no_rl_gt", "s_gt", "eng_gt", "eng_rl", "eng_no_rl",
     "eng_no_rl_gt", "act"
 ])
-
 for sim in tqdm(range(NUM_SIMS)):
-    # run simulation and collect end states
     gt, rl, no_rl, no_rl_gt, act_mean = run_simulation(NUM_STEPS)
     col.add("s_gt", gt)
     col.add("s_rl", rl)
     col.add("s_no_rl", no_rl)
     col.add("s_no_rl_gt", no_rl_gt)
     col.add("act", act_mean)
-
-    # Compute energy spectra and collect them
     ks, gt_eng = env.compute_energy_spectrum(gt)
     _, rl_eng = env.compute_energy_spectrum(rl)
     _, no_rl_eng = env.compute_energy_spectrum(no_rl)
     _, no_rl_gt_eng = env.compute_energy_spectrum(no_rl_gt)
-
     col.add("eng_gt", gt_eng)
     col.add("eng_rl", rl_eng)
     col.add("eng_no_rl", no_rl_eng)
     col.add("eng_no_rl_gt", no_rl_gt_eng)
-
-# convert to np arrays
 col.post_collection_processing()
-
-# In[ ]:
-
-# Saving
 _path = SAVE_PATH + f"{NUM_STEPS}steps_{DATA_SET_NAME}_{VEL_FIELD_TYPE}_end_results"
 save_col(col, path=_path)
-
-# ## Analysis of Quantitative Results
-
-# In[ ]:
-
 DATA_SET_NAME = "mnist"  # mnist, fashion
 VEL_FIELD_TYPE = "train"  # train, vortex
-
 NUM_STEPS = 50
 _path = LOAD_PATH + f"MAE@step50/{NUM_STEPS}steps_{DATA_SET_NAME}_{VEL_FIELD_TYPE}_end_results.pkl"
 col = load_col(path=_path)
-
-# In[ ]:
-
 NUM_SIMS = col("s_gt").shape[0]
 NUM_SIMS, NUM_STEPS
-
-# In[ ]:
-
-# Computing errors
 no_rl_error_col = np.abs(col("s_no_rl") - col("s_gt"))
 no_rl_gt_error_col = np.abs(col("s_no_rl_gt") - col("s_gt"))
 rl_error_col = np.abs(col("s_rl") - col("s_gt"))
-
-# In[ ]:
-
 plt.figure(figsize=(4, 4))
 categories = ["CGS", "ACGS", "CNN-MARL"]
 values = [
@@ -319,7 +245,6 @@ plt.bar(categories,
 plt.title(f"MAE after {NUM_STEPS} time steps")
 plt.ylabel(r"$MAE(\tilde \psi, \psi_{FGS})$")
 plt.grid(True)
-
 no_rl_error = no_rl_error_col.mean()
 print("Errors are scaled by $10^2$")
 for cat, value, std in zip(categories, values, yerr):
@@ -327,24 +252,17 @@ for cat, value, std in zip(categories, values, yerr):
         f"{cat}: {100*value:.4f} +- {100*std:.4f} | (-{(no_rl_error - value)/no_rl_error:.2%}) w.r.t. CGS"
     )
 
-# # Evolution of Metrics
-
-# In[ ]:
-
 
 def run_sim_and_collect_time_evolving_metrics(num_steps=100,
                                               do_plot=False,
                                               deterministic=True):
-
     _col = Collector([
         "err_rl", "err_no_rl", "err_no_rl_gt", "eng_err_rl", "eng_err_no_rl",
         "eng_err_no_rl_gt", "acts"
     ])
-
     _obs, _ = env.reset()
     no_rl = deepcopy(env.state)
     no_rl_gt = deepcopy(env.state)
-
     for i in range(num_steps):
         if deterministic:
             act_mean = actor.get_action_mean(
@@ -364,7 +282,6 @@ def run_sim_and_collect_time_evolving_metrics(num_steps=100,
                                 env.c_x,
                                 env.c_y,
                                 space_disc="second_order_upwind")
-
         # MAE domain error
         rl_error = np.mean(
             np.abs(env.gt_state[::env.subsample, ::env.subsample] - env.state))
@@ -399,76 +316,43 @@ def run_sim_and_collect_time_evolving_metrics(num_steps=100,
     return _col
 
 
-# In[ ]:
-
 NUM_STEPS = 400
 NUM_SIMS = 100
-
 col_2 = Collector([
     "err_rl", "err_no_rl", "err_no_rl_gt", "eng_err_rl", "eng_err_no_rl",
     "eng_err_no_rl_gt", "acts"
 ])
-
 for sim in tqdm(range(NUM_SIMS)):
     col = run_sim_and_collect_time_evolving_metrics(num_steps=NUM_STEPS)
     col_2.load_collection(col)
-
 col_2.post_collection_processing()
-
-# In[ ]:
-
 _path = SAVE_PATH + f"{NUM_STEPS}steps_{NUM_SIMS}sims_{DATA_SET_NAME}_{VEL_FIELD_TYPE}_evolution.pkl"
 save_col(col_2, path=_path)
-
-# # Analysis
-
-# In[ ]:
-
 NUM_STEPS = 400
 NUM_SIMS = 100
-
 _path = LOAD_PATH + f"metric_evolution/{NUM_STEPS}steps_{NUM_SIMS}sims_mnist_train_evolution.pkl"
 col_2 = load_col(path=_path)
-
-# In[ ]:
-
 SIM_LEN = col_2("err_rl").shape[1]
-
-# In[ ]:
-
 threshold = 0.01
 categories = ["err_rl", "err_no_rl_gt", "err_no_rl"]
-
-# Collect raw data points for each category
 data_points = [np.argmax(col_2(cat) > threshold, axis=1) for cat in categories]
-
 plt.figure(figsize=FIG_SIZE)
-
-# Set labels and titles
 labels = ["CNN-MARL", "ACGS", "CGS"]
 colors = [method_color[cat] for cat in labels]
-
-# Create the violin plot
 violin_parts = plt.violinplot(data_points, showmeans=False, showmedians=True)
-
-# Apply colors to each violin
 for i, body in enumerate(violin_parts['bodies']):
     body.set_color(colors[i])
     body.set_alpha(1)
-
 violin_parts['cbars'].set_edgecolor('black')
 violin_parts['cmaxes'].set_edgecolor('black')
 violin_parts['cmins'].set_edgecolor('black')
 violin_parts['cmedians'].set_edgecolor('black')
-
 plt.yscale("log")
 plt.gca().yaxis.set_major_formatter(ticker.ScalarFormatter())
-plt.xticks(ticks=[1, 2, 3],
-           labels=labels)  # Adjust ticks to match the number of categories
+plt.xticks(ticks=[1, 2, 3], labels=labels)
 plt.ylim(top=100)
 plt.ylabel("Low MAE Steps")
 plt.grid(True)
-
 values = [np.mean(low_mae_simlen) for low_mae_simlen in data_points]
 yerr = [np.std(low_mae_simlen) for low_mae_simlen in data_points]
 cgs_value = values[-1]
@@ -480,10 +364,7 @@ for cat, value, std in zip(labels, values, yerr):
 plt.tight_layout()
 plt.savefig(FIG_PATH +
             f'low_MAE_{threshold}_violin{SIM_LEN}steps_{NUM_SIMS}sims.pdf')
-
-# In[ ]:
-
-max_n = 200  # num_steps
+max_n = 200
 plt.figure(figsize=FIG_SIZE)
 plot_collection(range(max_n),
                 100 * col_2("err_rl")[:, :max_n],
@@ -498,10 +379,7 @@ plot_collection(range(max_n),
                 100 * col_2("err_no_rl_gt")[:, :max_n],
                 label="ACGS",
                 color=method_color["ACGS"])
-
 N_TRAIN_MAX = 100
-
-#plt.title(r"Evolution of Error $MAE(\tilde \psi, \psi_{FGS})$")
 plt.xlabel("Step")
 plt.ylabel(r"Relative Error")
 plt.yscale("log")
@@ -515,9 +393,6 @@ plt.tight_layout()
 plt.savefig(
     FIG_PATH +
     f'relative_MAE_evol_{max_n}steps_{NUM_SIMS}sims.pdf')  # Saving as PDF
-
-# In[ ]:
-
 max_n = SIM_LEN
 plt.figure(figsize=FIG_SIZE)
 plot_collection_individuals(
@@ -537,11 +412,9 @@ plot_collection_individuals(
     log=False,
     alpha=.05)
 plt.axvspan(0, N_TRAIN_MAX, color='grey', alpha=0.1, label="training regime")
-
 ax = plt.gca()
 ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{x} %"))
 plt.grid(True)
-#plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.4), edgecolor='black')
 plt.tight_layout()
 plt.ylabel("Error Reduction")
 plt.xlabel("Step")
@@ -551,17 +424,11 @@ plt.savefig(
     FIG_PATH +
     f'outperformance_evol_{max_n}steps_{NUM_SIMS}sims.pdf')  # Saving as PDF
 
-# # GIF Generation
-
-# In[ ]:
-
 
 def run_sim_and_collect_states(num_steps=100,
                                do_plot=False,
                                deterministic=True):
-
     _col = Collector(["no_rl", "rl", "gt"])
-
     _obs, _ = env.reset()
     no_rl = deepcopy(env.state)
     no_rl_gt = deepcopy(env.state)
@@ -598,12 +465,7 @@ def run_sim_and_collect_states(num_steps=100,
     return _col
 
 
-# In[ ]:
-
 col = run_sim_and_collect_states(num_steps=150, do_plot=True)
-
-# In[ ]:
-
 import imageio
 
 
@@ -621,24 +483,14 @@ def save_sim_to_gif(_col):
                         fps=20)
 
 
-# In[ ]:
-
 save_sim_to_gif(col)
-
-# # Speed Tests
-
-# In[ ]:
-
 from time import time
 
 NUM_SAMPLES = 100
-
 time_col = Collector(["CGS", "CNN-MARL", "ACGS", "FGS"])
-
 for _ in tqdm(range(NUM_SAMPLES)):
     obs, _ = env.reset()
     no_rl_gt = env.state
-
     # FGS
     begin = time()
     for _ in range(env.subsample):
@@ -646,15 +498,11 @@ for _ in tqdm(range(NUM_SAMPLES)):
                                     env.dns_dy, env.c_x_dns, env.c_y_dns)
     fgs_time = time() - begin
     time_col.add("FGS", fgs_time)
-
-    # CGS
     begin = time()
     env.upwind_scheme_2d_step(env.state, env.dt, env.dx, env.dy, env.c_x,
                               env.c_y)
     cgs_time = time() - begin
     time_col.add("CGS", cgs_time)
-
-    # ACGS
     begin = time()
     env.rk4_step(no_rl_gt,
                  env.dt,
@@ -665,8 +513,6 @@ for _ in tqdm(range(NUM_SAMPLES)):
                  space_disc="second_order_upwind")
     acgs_time = time() - begin
     time_col.add("ACGS", acgs_time)
-
-    # CNN-MARL
     begin = time()
     action = actor.get_action_mean(obs).detach().squeeze().cpu().numpy().clip(
         -1, 1)
@@ -677,13 +523,8 @@ for _ in tqdm(range(NUM_SAMPLES)):
                               env.c_x, env.c_y)
     cnn_marl_time = time() - begin
     time_col.add("CNN-MARL", cnn_marl_time)
-
 time_col.post_collection_processing()
-
-# In[ ]:
-
 plt.figure(figsize=(5, 4))
-
 categories = ["FGS", "CNN-MARL", "ACGS", "CGS"]
 values = [time_col(cat).mean() for cat in categories]
 yerr = [time_col(cat).std() for cat in categories]
@@ -698,15 +539,12 @@ plt.bar(categories,
 plt.grid(True)
 plt.tight_layout()
 plt.yscale("log")
-
 for cat, value, std in zip(categories, values, yerr):
     print(f"{cat}: {1000 * value:.2f} +- {100 * std:.2f} ms")
-
 cgs_time = time_col("CGS").mean()
 acgs_time = time_col("ACGS").mean()
 fgs_time = time_col("FGS").mean()
 cnn_marl_time = time_col("CNN-MARL").mean()
-
 print(
     f"\n CGS step time improvement of -{(fgs_time-cgs_time) / fgs_time :.2%} w.r.t. FGS"
 )
@@ -716,7 +554,3 @@ print(
 print(
     f"CNN-MARL step time improvement of -{(fgs_time-cnn_marl_time) / fgs_time :.2%} w.r.t. FGS"
 )
-
-# In[ ]:
-
-# In[ ]:
