@@ -74,6 +74,9 @@ The jupyter notebooks
 contain the code to reproduce the results from the paper.
 
 As running multiple simulations for the evaluations takes long, we provide the option to load the simulation data for the results from this [Google Drive link](https://drive.google.com/file/d/1Kz0AIpIizymvtfP5xXUMtzvg-S2Cl-Wl/view?usp=sharing). Unzip the folder and move it to `results/` for further analysis with the notebooks.
+```
+unzip data.zip -d results/
+```
 
 ## Acknowledgements
 Inspiration, code snippets from:
