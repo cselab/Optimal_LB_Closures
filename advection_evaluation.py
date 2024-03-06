@@ -113,7 +113,7 @@ def load_col(path):
         return loaded_data
 
 
-DEVICE = "cpu"
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 backbone = AdvectionIRCNN()
 actor = MarlModel(backbone=backbone, _is="actor").to(DEVICE)
 critic = MarlModel(backbone=backbone, _is="critic").to(DEVICE)
