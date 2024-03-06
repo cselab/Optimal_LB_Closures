@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
 from lib.environments import BurgersEnvironment
 from lib.models import BurgersIRCNN
 from lib.models.wrappers import MarlModel
@@ -36,8 +34,6 @@ plt.rcParams['legend.fontsize'] = 12
 plt.rcParams['pdf.use14corefonts'] = True
 plt.rcParams['ps.useafm'] = True
 
-# In[ ]:
-
 
 def plot_n(ims, titles=None):
     fig, axes = plt.subplots(1, len(ims), figsize=(7, 5))
@@ -67,8 +63,6 @@ method_color = {
     "FGS": "green",
     "CNN-MARL": "blue"
 }
-
-# In[ ]:
 
 
 class Collector:
@@ -139,8 +133,6 @@ def plot_collection_individuals(ks,
         plt.yscale('log')
 
 
-# In[ ]:
-
 SAVE_PATH = f'results_dump/data/burgers/'
 LOAD_PATH = f'results/data/burgers/'
 FIG_PATH = f'results_dump/figures/burgers/'
@@ -148,9 +140,7 @@ FIG_PATH = f'results_dump/figures/burgers/'
 os.makedirs(os.path.dirname(SAVE_PATH), exist_ok=True)
 os.makedirs(os.path.dirname(FIG_PATH), exist_ok=True)
 
-# In[ ]:
-
-DEVICE = "cuda:0"
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 ACTION_DIM = 2
 backbone = BurgersIRCNN()
 actor = MarlModel(backbone=backbone, _is="actor",
@@ -159,12 +149,8 @@ critic = MarlModel(backbone=backbone, _is="critic",
                    action_dim=ACTION_DIM).to(DEVICE)
 actor_critic = ActorCritic(actor, critic)
 
-# In[ ]:
-
 EPOCH = 1999  # Load EPOCH=1999 for best model
 POLICY_READ_PATH = f'./weights/policy_launch_platform/burgers_train2_ppo_IRCNN_eplen:20_seed:0_subsample:5_discount:0.95_num_cgs_points:30_ent_coef:0.05_adaptivelen_200max/policy_ep{EPOCH}.pt'
-
-# In[ ]:
 
 dist = ElementwiseNormal
 ElementwiseNormal.marl = True
@@ -177,8 +163,6 @@ policy.load_state_dict(
     torch.load(POLICY_READ_PATH, map_location=torch.device(DEVICE)))
 print("Built model")
 
-# In[ ]:
-
 VEL_FIELD_TYPE = "train2"  # Possible velocity fields: train2, vortex, vortex2...
 
 env = BurgersEnvironment(ep_len=10,
@@ -186,8 +170,6 @@ env = BurgersEnvironment(ep_len=10,
                          num_points_cgs=30,
                          velocity_field_type=VEL_FIELD_TYPE,
                          subsample=5)
-
-# In[ ]:
 
 
 def run_simulation_and_collect_velocities(num_steps,
@@ -253,8 +235,6 @@ def run_simulation_and_collect_velocities(num_steps,
 # - One rollout of CGS, CNN-MARL and FGS with SIM_LEN coarse steps
 # - Plotting the velocity magnitude of each
 
-# In[ ]:
-
 SIM_LEN = 100
 run_simulation_and_collect_velocities(SIM_LEN,
                                       num_imgs=5,
@@ -263,8 +243,6 @@ run_simulation_and_collect_velocities(SIM_LEN,
 
 # # Quantitative Results
 # ## Simulation
-
-# In[ ]:
 
 NUM_SIMS = 10
 NUM_STEPS = 10
@@ -278,23 +256,17 @@ for i in tqdm(range(NUM_SIMS)):
 
 col.post_collection_processing()
 
-# In[ ]:
-
 # Saving
 _path = SAVE_PATH + f"{NUM_STEPS}steps_{NUM_SIMS}sims_{VEL_FIELD_TYPE}_evolution.pkl"
 save_col(col, path=_path)
 
 # # Analysis
 
-# In[ ]:
-
 # Loading previously collected collection for visualization
 NUM_SIMS = 100
 NUM_STEPS = 400
 _path = LOAD_PATH + f"{NUM_STEPS}steps_{NUM_SIMS}sims_{VEL_FIELD_TYPE}_evolution.pkl"
 col = load_col(path=_path)
-
-# In[ ]:
 
 threshold = 0.1
 categories = ["CNN-MARL", "CGS"]
@@ -340,8 +312,6 @@ for cat, value, std in zip(categories, values, yerr):
         f"{cat}: {value:.4f} +- {std:.4f} | (+{(value-cgs_value)/cgs_value:.2%})"
     )
 
-# In[ ]:
-
 max_n = 400
 N_TRAIN_MAX = 200
 steps = range(max_n)
@@ -376,8 +346,6 @@ plt.xlabel("Step")
 plt.tight_layout()
 plt.savefig(FIG_PATH + f'relative_MAE_evol_{max_n}steps.pdf')  # Saving as PDF
 
-# In[ ]:
-
 # Error reduction of CGS with CNN-MARL
 plt.figure()
 steps = range(NUM_STEPS)
@@ -399,8 +367,6 @@ plt.xlabel("Step")
 plt.tight_layout()
 plt.savefig(FIG_PATH +
             f'improvement_rel_MAE_evol_{SIM_LEN}steps.pdf')  # Saving as PDF
-
-# In[ ]:
 
 plt.figure(figsize=(4, 4))
 EVAL_STEP = 50
@@ -431,8 +397,6 @@ for cat, value, std in zip(categories, values, yerr):
 
 # # GIF Generation
 
-# In[ ]:
-
 import imageio
 
 
@@ -450,21 +414,15 @@ def save_sim_to_gif(_col, names=None):
                         fps=20)
 
 
-# In[ ]:
-
 SIM_LEN = 100
 vizualization_col = run_simulation_and_collect_velocities(num_steps=SIM_LEN,
                                                           num_imgs=1,
                                                           do_plot=True)
 vizualization_col.post_collection_processing()
 
-# In[ ]:
-
 save_sim_to_gif(vizualization_col, names=["|u|_cgs", "|u|_cnn-marl"])
 
 # # Speed Tests
-
-# In[ ]:
 
 from time import time
 
@@ -500,8 +458,6 @@ for _ in tqdm(range(NUM_SAMPLES)):
 
 time_col.post_collection_processing()
 
-# In[ ]:
-
 plt.figure(figsize=(4, 4))
 
 categories = ["FGS", "CNN-MARL", "CGS"]
@@ -532,5 +488,3 @@ print(
 print(
     f"CNN-MARL step time improvement of -{(fgs_time-cnn_marl_time) / fgs_time :.2%} w.r.t. FGS"
 )
-
-# In[ ]:

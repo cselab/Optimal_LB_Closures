@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
 from lib.environments import AdvectionEnvironment
 from lib.models import AdvectionIRCNN
 from lib.models.wrappers import MarlModel
@@ -28,8 +26,6 @@ plt.rcParams['axes.labelsize'] = FONT_SIZE
 plt.rcParams['xtick.labelsize'] = FONT_SIZE
 plt.rcParams['ytick.labelsize'] = FONT_SIZE
 plt.rcParams['legend.fontsize'] = 12
-
-# In[ ]:
 
 
 # function to plot images side by side
@@ -62,25 +58,17 @@ def calculate_correlation(predictions, ground_truth):
     return correlation_coefficient
 
 
-# In[ ]:
-
 # Figures will be saved to this path
 FIG_PATH = f'results_dump/figures/advection/'
 
-# In[ ]:
-
-DEVICE = "cuda:0"
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 backbone = AdvectionIRCNN()
 actor = MarlModel(backbone=backbone, _is="actor").to(DEVICE)
 critic = MarlModel(backbone=backbone, _is="critic").to(DEVICE)
 actor_critic = ActorCritic(actor, critic)
 
-# In[ ]:
-
 EPOCH = 1499  # load EPOCH=1499 for best model
 POLICY_READ_PATH = f'./weights/policy_launch_platform/mnist_train_ppo_IRCNN_eplen:4_seed:0_subsample:4_discount:0.95_growing_ep_len_maxed/policy_ep{EPOCH}.pt'
-
-# In[ ]:
 
 dist = ElementwiseNormal
 ElementwiseNormal.marl = True
@@ -93,8 +81,6 @@ policy.load_state_dict(
     torch.load(POLICY_READ_PATH, map_location=torch.device(DEVICE)))
 print("Built model")
 
-# In[ ]:
-
 env = AdvectionEnvironment(
     ep_len=10,
     train=False,
@@ -103,8 +89,6 @@ env = AdvectionEnvironment(
     velocity_field_type=
     "train"  # Possible velocity fields: train, train2, vortex, vortex2...
 )
-
-# In[ ]:
 
 
 # Function to calculate approximation of perfect action
@@ -144,9 +128,6 @@ def mde_upwind_diffusion_term(states, c_x, c_y, dx, dy, dt):
     return dt * (t_dir_error + x_dir_error + y_dir_error), mid_idx
 
 
-# In[ ]:
-
-
 def rollout_and_compute_mde_term(env, num_steps=30, do_plot=False):
     states = []
     dns_states = []
@@ -180,13 +161,9 @@ def rollout_and_compute_mde_term(env, num_steps=30, do_plot=False):
     return actions[mid_idx], analyt, coef
 
 
-# In[ ]:
-
 action, analyt, coef = rollout_and_compute_mde_term(env,
                                                     num_steps=30,
                                                     do_plot=True)
-
-# In[ ]:
 
 plt.figure(figsize=(4.5, 4))
 plt.plot(analyt.flatten(), action.flatten(), 'x', color="black")
@@ -205,8 +182,6 @@ plt.tight_layout()
 os.makedirs(os.path.dirname(FIG_PATH), exist_ok=True)
 plt.savefig(FIG_PATH + f'action_cluster.pdf')
 
-# In[ ]:
-
 # run NUM_SAMPLES simulations and calculate the pearson correlation coefficient for each one
 NUM_SAMPLES = 5
 analyt_energs = []
@@ -216,11 +191,7 @@ for i in tqdm(range(NUM_SAMPLES)):
     act_mean, analyt, coef = rollout_and_compute_mde_term(env, 30, False)
     coefs[i] = coef
 
-# In[ ]:
-
 print(
     f"Mean pixel wise correlation between the numerically approximated MDE term and the action of the agent:"
 )
 print(f"{coefs.mean():.2f} +- {coefs.std():.2f}")
-
-# In[ ]:
