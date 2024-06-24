@@ -24,19 +24,6 @@ class BaseEnvironment(ABC, gym.Env):
     def _get_info(self):
         return {}
 
-    @abstractmethod
-    def _get_obs(self):
-        pass
-
-    @abstractmethod
-    def play_episode_and_log_to_wandb(self, *args, **kwargs) -> np.array:
-        # Just playing one episode and visualizing it
-        return np.array([])
-
-    @abstractmethod
-    def _play_and_get_eval_metrics(self, *args, **kwargs) -> Batch:
-        # playing a set of episodes and computing average metrics that are returned in a batch
-        return Batch()
 
     def tests(self,
               actor: MarlModel,
