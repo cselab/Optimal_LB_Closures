@@ -6,9 +6,14 @@ from torch.utils.tensorboard import SummaryWriter
 import os
 import json
 from functools import partial
+import gymnasium as gym
 
-from tianshou.data import Collector, VectorReplayBuffer
+from tianshou.data import Batch, Collector, ReplayBuffer, VectorReplayBuffer
 from tianshou.env import DummyVectorEnv
+from tianshou.policy import BasePolicy, PPOPolicy
+from tianshou.trainer import OnpolicyTrainer
+from tianshou.utils.net.common import ActorCritic, Net
+from tianshou.utils.net.discrete import Actor, Critic
 from tianshou.utils import WandbLogger
 
 from lib.environments import get_environment
@@ -18,6 +23,7 @@ from lib.models import get_actor_critic
 from lib.utils import str2bool, Config, dict_to_wandb_table, restrict_to_num_threads
 from lib.trainer import MyOnpolicyTrainer
 import wandb
+wandb.require("core")
 
 
 def checkpoint_fn(epoch: int,
@@ -37,8 +43,14 @@ def parse_args():
     # training parameters
     parser = argparse.ArgumentParser(description='RL training')
 
+    #environment parameters
+    parser.add_argument('--env',
+                        help='which environment to use',
+                        default='cartpole-v1',
+                        type=str)
+
     # rl training parameters
-    _default_device = "0" if torch.cuda.is_available() else "cpu"
+    _default_device = "3" if torch.cuda.is_available() else "cpu"
     parser.add_argument('--gpu',
                         help='device number of GPU',
                         default=_default_device,  # cpu or int of gpu number
@@ -83,27 +95,22 @@ class RLConfig(Config):
         self.DEVICE = 'cpu' if self.gpu == 'cpu' else f'cuda:{int(self.gpu)}'
         self.SEED = 0
         self.LOG_PATH = "log/rl_train"
-        self.NUM_THREADS = 8
-        self.LOG_TO_WANDB_EVERY_N_EPOCHS = 5
+        self.NUM_THREADS = 1
+        self.LOG_TO_WANDB_EVERY_N_EPOCHS = 1
 
         # rl training parameters
         self.STEP_PER_EPOCH = 1000
         self.EPISODE_PER_TEST = 10
         self.EPISODE_PER_COLLECT = 1
         self.SAVE_INTERVAL = 50
-        self.NUM_ENVS = int(self.batch_size / self.ep_len) + 1
+        self.NUM_ENVS = 20
 
     def model_name(self):
         """
         :return: name for model logging on wandb. Includes all hyperparameters.
         """
-        if self.env == "advection":
-            return f"{self.dataset}_{self.vel_type}_{self.algo}_{self.architecture}_eplen:{self.ep_len}" \
-                   f"_seed:{self.SEED}_subsample:{self.subsample}_discount:{self.discount}"
-        elif self.env == "burgers":
-            return f"burgers_{self.vel_type}_{self.algo}_{self.architecture}_eplen:{self.ep_len}" \
-                   f"_seed:{self.SEED}_subsample:{self.subsample}_discount:{self.discount}" \
-                   f"_num_cgs_points:{self.img_size}_ent_coef:{self.ent_coef}"
+        if self.env == "cartpole-v1":
+            return f"cartpole-v1"
         else:
             raise NotImplementedError(f"model_name for environment {self.env} not implemented.")
 
@@ -122,7 +129,7 @@ if __name__ == '__main__':
 
     # Create folder to store model checkpoints
     PROJECT_ROOT = os.path.dirname(os.path.realpath(__file__))
-    POLICY_DUMP_PATH = PROJECT_ROOT + f'/weights/policy_dump/{config.model_save_id()}'
+    POLICY_DUMP_PATH = PROJECT_ROOT  + f'/weights/policy_dump/{config.model_save_id()}'
     os.makedirs(POLICY_DUMP_PATH, exist_ok=True)
 
     # set seeds for reproducibility
@@ -136,8 +143,8 @@ if __name__ == '__main__':
     #######################################################################################################
 
     env = gym.make("CartPole-v1")
-    train_envs = DummyVectorEnv([lambda: gym.make("CartPole-v1") for _ in range(config.NUM_ENVS)])
-    test_envs = DummyVectorEnv([lambda: gym.make("CartPole-v1") for _ in range(10)])
+    train_env = DummyVectorEnv([lambda: gym.make("CartPole-v1") for _ in range(config.NUM_ENVS)])
+    test_env = DummyVectorEnv([lambda: gym.make("CartPole-v1") for _ in range(1)])
 
     #######################################################################################################
     ####### Policy ########################################################################################
@@ -147,7 +154,7 @@ if __name__ == '__main__':
     actor = Actor(preprocess_net=net, action_shape=env.action_space.n, device=device).to(device)
     critic = Critic(preprocess_net=net, device=device).to(device)
     actor_critic = ActorCritic(actor=actor, critic=critic)
-    optim = torch.optim.Adam(actor_critic.parameters(), lr=0.0003)
+    optim = torch.optim.Adam(actor_critic.parameters(), lr=config.lr)
     dist = torch.distributions.Categorical
     policy = PPOPolicy(
         actor=actor,
@@ -218,5 +225,3 @@ if __name__ == '__main__':
     torch.save(policy.state_dict(), f'{POLICY_DUMP_PATH}/policy.pt')
     torch.save(policy.actor.state_dict(), f'{POLICY_DUMP_PATH}/actor.pt')
     # save config dict in same directory as weights to make them identifiable
-    with open(f"{POLICY_DUMP_PATH}/mse_errors.json", "w") as json_file:
-        json.dump(mse_errors, json_file, indent=4)

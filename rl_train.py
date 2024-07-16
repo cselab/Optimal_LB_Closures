@@ -18,6 +18,7 @@ from lib.models import get_actor_critic
 from lib.utils import str2bool, Config, dict_to_wandb_table, restrict_to_num_threads
 from lib.trainer import MyOnpolicyTrainer
 import wandb
+wandb.require("core")
 
 
 def checkpoint_fn(epoch: int,
