@@ -37,27 +37,6 @@ def parse_args():
     # training parameters
     parser = argparse.ArgumentParser(description='RL training')
 
-    # environment parameters
-    parser.add_argument('--env',
-                        help='which environment to use',
-                        default='advection',  # advection, burgers
-                        type=str)
-    parser.add_argument('--img_size',
-                        default=64,
-                        type=int)
-    parser.add_argument('--dataset',
-                        help='which dataset to use',
-                        default='mnist',  # mnist, fashion
-                        type=str)
-    parser.add_argument('--subsample',
-                        help='subsampling factor - accurate simulation runs with grid of width img_size * subsample',
-                        default=4,
-                        type=int)
-    parser.add_argument('--vel_type',
-                        help='velocity type',
-                        default='train',  # translational, vortex, vortex2, linear, solid_body_rotation, train, train2
-                        type=str)
-
     # rl training parameters
     _default_device = "0" if torch.cuda.is_available() else "cpu"
     parser.add_argument('--gpu',
@@ -69,20 +48,8 @@ def parse_args():
                         type=int)
     parser.add_argument('--discount',
                         help='discount factor',
-                        default=0.8,
+                        default=0.97,
                         type=float)
-    parser.add_argument('--ent_coef',
-                        help='entropy coefficient',
-                        default=0.1,
-                        type=float)
-    parser.add_argument('--ep_len',
-                        help='length of episode',
-                        default=7,
-                        type=int)
-    parser.add_argument('--test_ep_len',
-                        help='length of episode',
-                        default=50,
-                        type=int)
     parser.add_argument('--lr',
                         help='learning rate',
                         default=1e-5,
@@ -118,8 +85,6 @@ class RLConfig(Config):
         self.LOG_PATH = "log/rl_train"
         self.NUM_THREADS = 8
         self.LOG_TO_WANDB_EVERY_N_EPOCHS = 5
-        self.architecture = "IRCNN"
-        self.algo = "ppo"
 
         # rl training parameters
         self.STEP_PER_EPOCH = 1000
@@ -164,50 +129,35 @@ if __name__ == '__main__':
     torch.manual_seed(config.SEED)
     np.random.seed(config.SEED)
 
+    device = config.DEVICE
+
     #######################################################################################################
     ####### environments ##################################################################################
     #######################################################################################################
 
-    train_env_constructor = partial(get_environment,
-                                    env_name=config.env,
-                                    img_size=config.img_size,
-                                    dataset=config.dataset,
-                                    subsample=config.subsample,
-                                    ep_len=config.ep_len,
-                                    train=True,
-                                    velocity_field_type=config.vel_type)
-
-    # Fix test environment parameters to make reward numbers comparable
-    test_env = get_environment(env_name=config.env,
-                               img_size=config.img_size,
-                               dataset="mnist",
-                               subsample=config.subsample,
-                               ep_len=config.test_ep_len,
-                               train=False,
-                               velocity_field_type=config.vel_type)
-
-    train_env = DummyVectorEnv([lambda: train_env_constructor() for _ in range(config.NUM_ENVS)])
+    env = gym.make("CartPole-v1")
+    train_envs = DummyVectorEnv([lambda: gym.make("CartPole-v1") for _ in range(config.NUM_ENVS)])
+    test_envs = DummyVectorEnv([lambda: gym.make("CartPole-v1") for _ in range(10)])
 
     #######################################################################################################
     ####### Policy ########################################################################################
     #######################################################################################################
-    actor_critic = get_actor_critic(config.architecture,
-                                    device=config.DEVICE,
-                                    env=config.env,
-                                    action_dim=test_env.action_space.shape[0])
 
-    # optimizer
-    optim = torch.optim.AdamW(actor_critic.parameters(), lr=config.lr)
-
-    # policy
-    dist = ElementwiseNormal
-    ElementwiseNormal.marl = True
-    policy = get_rl_algo(config.algo,
-                         actor_critic,
-                         optim,
-                         dist,
-                         action_space=test_env.action_space,
-                         config=config)
+    net = Net(state_shape=env.observation_space.shape, hidden_sizes=[64, 64], device=device)
+    actor = Actor(preprocess_net=net, action_shape=env.action_space.n, device=device).to(device)
+    critic = Critic(preprocess_net=net, device=device).to(device)
+    actor_critic = ActorCritic(actor=actor, critic=critic)
+    optim = torch.optim.Adam(actor_critic.parameters(), lr=0.0003)
+    dist = torch.distributions.Categorical
+    policy = PPOPolicy(
+        actor=actor,
+        critic=critic,
+        optim=optim,
+        dist_fn=dist,
+        action_space=env.action_space,
+        deterministic_eval=True,
+        action_scaling=False,
+    )
 
     # logger
     logging_config_dict = config.as_dict()
@@ -250,11 +200,18 @@ if __name__ == '__main__':
     #######################################################################################################
     ####### Trainer #######################################################################################
     #######################################################################################################
-    trainer = MyOnpolicyTrainer(
+    #Trainer
+    trainer = OnpolicyTrainer(
+        policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
-        save_checkpoint_fn=partial(checkpoint_fn, _policy=policy, policy_dump_path=POLICY_DUMP_PATH, test_env=test_env, mse_dict=mse_errors),
-        **trainer_kwargs,
+        max_epoch=10,
+        step_per_epoch=50000,
+        repeat_per_collect=10,
+        episode_per_test=10,
+        batch_size=256,
+        step_per_collect=2000,
+        #stop_fn=lambda mean_reward: mean_reward >= 195,
     )
     trainer.run()
 
