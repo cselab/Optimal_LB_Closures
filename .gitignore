@@ -10,3 +10,4 @@
 /log/
 /gifs/
 /results/data/
+*__pycache__/
