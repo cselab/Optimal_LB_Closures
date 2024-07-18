@@ -75,8 +75,18 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         return np.array(v1), {}
     
     def step(self, action):
+        if not (np.any(self.action_space.low <= action) and np.any(action <= self.action_space.high)):
+            print("WARNING: Action is not in action space")
+            print(f"action={action}; omega={self.cgs.omega}")
+            action = np.clip(action, self.action_space.low, self.action_space.high)
+            
+
+        # load in action and get rid of channel dimension
+        #print(action.shape, self.action_space.shape)
+        assert action.shape == self.action_space.shape
+
         self.cgs.omega = self.omg * np.float64(action[0])
-        #print(f"action={action[0]}; omega={self.cgs.omega}")
+        
         self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
         for i in range(self.factor):
             self.f2, _ = self.fgs.step(self.f2, self.factor*self.counter+i, return_fpost=self.fgs.returnFpost)
@@ -119,7 +129,6 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         #plot a common colorbar
         #fig.colorbar(ax1.imshow(v1, cmap=sn.cm.icefire), ax=[ax1, ax2], orientation='vertical')
         plt.show()
-
 
 
 
