@@ -164,10 +164,12 @@ if __name__ == '__main__':
     logging_config_dict['total_params'] = sum(p.numel() for p in actor_critic.parameters())
     logging_config_dict['training_mode'] = 'rl'
     logging_config_dict['rl_algo'] = policy.__class__.__name__
+
     logger = WandbLogger(project=config.exp_name,
                          name=config.model_name(),
                          config=logging_config_dict,
                          save_interval=config.SAVE_INTERVAL)
+                         
     dict_to_wandb_table(logging_config_dict)
     logging_config_dict['wandb_url'] = wandb.run.get_url()
     writer = SummaryWriter(config.LOG_PATH)
