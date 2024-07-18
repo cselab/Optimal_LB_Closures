@@ -53,7 +53,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.factor = int(self.fgs.downsamplingFactor/self.cgs.downsamplingFactor)
         self.counter = 0
         self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float64)
-        self.action_space = spaces.Box(low=0.8, high=1.2, shape=(1,), dtype=np.float32)
+        self.action_space = spaces.Box(low=0.98, high=1.02, shape=(1,), dtype=np.float32)
 
     def seed(self, seed):
         np.random.seed(seed)
@@ -76,6 +76,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
     
     def step(self, action):
         self.cgs.omega = self.omg * np.float64(action[0])
+        #print(f"action={action[0]}; omega={self.cgs.omega}")
         self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
         for i in range(self.factor):
             self.f2, _ = self.fgs.step(self.f2, self.factor*self.counter+i, return_fpost=self.fgs.returnFpost)
