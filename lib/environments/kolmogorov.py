@@ -13,7 +13,6 @@ from gymnasium import spaces
 from gymnasium.wrappers import TimeLimit, RescaleAction, TransformObservation
 from stable_baselines3.common.env_checker import check_env
 
-
 from tianshou.data import Batch
 from torch.utils.data import DataLoader
 from scipy.interpolate import griddata
@@ -79,7 +78,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.cgs.omega = self.omg * np.float64(action[0])
         self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
         for i in range(self.factor):
-            self.f2, _ = self.fgs.step(self.f2, self.counter+i, return_fpost=self.fgs.returnFpost)
+            self.f2, _ = self.fgs.step(self.f2, self.factor*self.counter+i, return_fpost=self.fgs.returnFpost)
         self.counter += 1
 
         self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
