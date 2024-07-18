@@ -25,9 +25,11 @@ from lib.environments.velocity_generation import VelocityFieldGenerator
 from lib.datasets import get_train_val_test_initial_conditions_dataset
 from lib.models.wrappers import MarlModel
 
+#temporary solution for xlb imports
 sys.path.append(os.path.abspath('/home/pfischer/XLB'))
 from my_flows.kolmogorov_2d import Kolmogorov_flow
-from my_flows.helpers import get_kwargs, get_vorticity
+from my_flows.helpers import get_kwargs, get_vorticity, get_velocity
+from src.utils import *
 
 
 class KolmogorovEnvironment(BaseEnvironment, ABC):
@@ -37,13 +39,16 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         #Coarse-Grid-Simulation <- kwargs1
         self.kwargs1 = kwargs1
         self.cgs = Kolmogorov_flow(**kwargs1)
-        self.f1 = self.cgs.assign_fields_sharded()
         self.omg = self.cgs.omega
+        self.f1 = self.cgs.assign_fields_sharded()
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+       
 
         #Fine-Grid-Simulation <- kwargs2
         self.kwargs2 = kwargs2
         self.fgs = Kolmogorov_flow(**kwargs2)
         self.f2 = self.fgs.assign_fields_sharded()
+        self.rho2, self.u2 = get_velocity(self.f2, self.fgs)
         
         #other stuff  
         self.factor = int(self.fgs.downsamplingFactor/self.cgs.downsamplingFactor)
@@ -62,7 +67,11 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.fgs = Kolmogorov_flow(**self.kwargs2)
         self.f1 = self.cgs.assign_fields_sharded()
         self.f2 = self.fgs.assign_fields_sharded()
-        v1 = get_vorticity(self.f1, self.cgs)
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+        self.rho2, self.u2 = get_velocity(self.f2, self.fgs)
+
+        v1 = vorticity_2d(self.u1, self.cgs.dx_eff)
+        #v1 = get_vorticity(self.f1, self.cgs)
         #return v1, info
         return np.array(v1), {}
     
@@ -73,8 +82,14 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
             self.f2, _ = self.fgs.step(self.f2, self.counter+i, return_fpost=self.fgs.returnFpost)
         self.counter += 1
 
-        v1 = get_vorticity(self.f1, self.cgs)
-        v2 = get_vorticity(self.f2, self.fgs)
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+        self.rho2, self.u2 = get_velocity(self.f2, self.fgs)
+
+        #v1 = get_vorticity(self.f1, self.cgs)
+        #v2 = get_vorticity(self.f2, self.fgs)
+        v1 = vorticity_2d(self.u1, self.cgs.dx_eff)
+        v2 = vorticity_2d(self.u2, self.fgs.dx_eff)
+
         corr = np.corrcoef(v1.flatten(), v2.flatten())[0, 1]
         terminated = bool(corr<0.97)
         reward = corr
@@ -84,8 +99,10 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         return np.array(v1), reward, terminated, False, {}
 
     def render(self):
-        v1 = get_vorticity(self.f1, self.cgs)
-        v2 = get_vorticity(self.f2, self.fgs)
+        #v1 = get_vorticity(self.f1, self.cgs)
+        #v2 = get_vorticity(self.f2, self.fgs)
+        v1 = vorticity_2d(self.u1, self.cgs.dx_eff)
+        v2 = vorticity_2d(self.u2, self.fgs.dx_eff)
         #print(f"{1}:", np.mean(((v1-v2)**2))/np.mean((1e-10+(v1**2))))
         print(np.corrcoef(v1.flatten(), v2.flatten())[0, 1])
         # plot v1 and v2 next to each other
@@ -246,6 +263,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
 
 
 def main():
+    #here a trivial run of the environment is displayed
     #path to initial velocity and density field
     u0_path = "/home/pfischer/XLB/vel_init/velocity_burn_in_1806594.npy" #4096x4096 simulation
     rho0_path = "/home/pfischer/XLB/vel_init/density_burn_in_1806594.npy" #4096x4096 simulation
