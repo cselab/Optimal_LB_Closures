@@ -1,5 +1,4 @@
 from abc import ABC
-
 import matplotlib.pyplot as plt
 import seaborn as sn
 import numpy as np
