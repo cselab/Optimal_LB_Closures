@@ -8,7 +8,7 @@ import json
 from functools import partial
 import sys
 from tqdm import tqdm
-from tianshou.utils import WandbLogger
+#from tianshou.utils import WandbLogger
 from tianshou.data import Batch, Collector, ReplayBuffer, VectorReplayBuffer
 from tianshou.env import DummyVectorEnv
 from tianshou.policy import BasePolicy, PPOPolicy
@@ -27,6 +27,7 @@ from lib.distributions import ElementwiseNormal
 from lib.models import get_actor_critic
 from lib.utils import str2bool, Config, dict_to_wandb_table, restrict_to_num_threads
 from lib.trainer import MyOnpolicyTrainer
+from lib.my_logger import WandbLogger2
 
 #temporary solution for xlb imports
 sys.path.append(os.path.abspath('/home/pfischer/XLB'))
@@ -183,14 +184,8 @@ if __name__ == '__main__':
 
     #wandb Logger -> doesn't really work
     log_path = os.path.join(args.logdir, args.task, "dqn")
-    logger = WandbLogger(train_interval=1000,
-                     test_interval = 1,
-                     update_interval = 1000,
-                     save_interval = 1,
-                     #project=args.task,
-                     #name=args.model,
-                     config=args,
-                     )
+    #logger = WandbLogger2(train_interval=1000, test_interval = 1, update_interval = 1000, save_interval = 1, config=args)
+    logger = WandbLogger2(config=args)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
     logger.load(writer)

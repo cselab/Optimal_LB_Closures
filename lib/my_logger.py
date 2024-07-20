@@ -20,7 +20,7 @@ VALID_LOG_VALS = typing.get_args(VALID_LOG_VALS_TYPE)
 TRestoredData = dict[str, np.ndarray | dict[str, "TRestoredData"]]
 
 
-class WandbLogger(BaseLogger):
+class WandbLogger2(BaseLogger):
     """Weights and Biases logger that sends data to https://wandb.ai/.
 
     This logger creates three panels with plots: train, test, and update.
@@ -65,7 +65,10 @@ class WandbLogger(BaseLogger):
         config: argparse.Namespace | dict | None = None,
         monitor_gym: bool = True,
     ) -> None:
-        super().__init__(train_interval, test_interval, update_interval, info_interval)
+
+        print(train_interval, test_interval, update_interval, info_interval)
+        super().__init__(train_interval=train_interval, test_interval=test_interval,
+                    update_interval=update_interval)
         self.last_save_step = -1
         self.save_interval = save_interval
         self.write_flush = write_flush
