@@ -40,6 +40,14 @@ wandb.require("core")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
+#def checkpoint_fn(epoch, env_step, gradient_step):
+#    #test_data = test_env.tests(_policy.actor, step=test_env.step, num_eps=10)
+#    #mse_dict[f"epoch_{epoch}"] = test_data["mae_error"]
+#    #torch.save(_policy.state_dict(), f'{policy_dump_path}/policy_ep{epoch}.pt')
+#    print("checkpoint fct is called!!!")
+#    return ""
+
+
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", type=str, default="CartPole-v1")
@@ -47,7 +55,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--reward_threshold", type=int, default=500)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--buffer_size", type=int, default=20000)
-    parser.add_argument("--max_epoch", type=int, default=3)
+    parser.add_argument("--max_epoch", type=int, default=10)
     parser.add_argument("--step_per_epoch", type=int, default=100)
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
@@ -208,4 +216,9 @@ if __name__ == '__main__':
 
     result = trainer.run()
 
+
+    #save policy
+    torch.save(policy.state_dict(), "global_omega.pth")
     print("run is finished")
+
+ 

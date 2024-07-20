@@ -136,6 +136,7 @@ class WandbLogger2(BaseLogger):
             log_data = self.prepare_dict_for_logging(log_data)
             self.write(f"{DataScope.INFO.value}/epoch", step, log_data)
             self.last_log_info_step = step
+            
 
     def save_data(
         self,
