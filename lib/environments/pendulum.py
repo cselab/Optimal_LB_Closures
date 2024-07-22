@@ -61,9 +61,12 @@ class two_pendulums(BaseEnvironment, ABC):
         self.action_space = spaces.Box(low=0, high=2, shape=(1,), dtype=np.float32)
         self.x1 = [self.x_0, self.x_11]
         self.x2 = [self.x_0, self.x_12]
+
+    def seed(self, seed):
+        np.random.seed(seed)
         
 
-    def reset(self, *args, **kwargs):
+    def reset(self, seed=None, **kwargs):
         super().reset(seed=seed, **kwargs)
         self.counter = 1
         self.cgs.reset()
@@ -87,13 +90,13 @@ class two_pendulums(BaseEnvironment, ABC):
 
         terminated = bool(np.abs(err)>0.1)
         truncated = bool(self.counter==self.N1)
-        if terminated:
-            err -= 100
+        if not terminated:
+            rew = 1
         else:
-            err += 0.1
+            rew = 0
 
         info = {}
-        return [self.x1[-1]], err, terminated, truncated, info
+        return [self.x1[-1]], rew, terminated, truncated, info
 
 
     def render(self, title: str = 'state'):

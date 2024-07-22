@@ -101,7 +101,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
 
         corr = np.corrcoef(v1.flatten(), v2.flatten())[0, 1]
         terminated = bool(corr<0.97)
-        reward = corr
+        reward = (corr-0.97)/0.03
         #if terminated:
         #    reward -= 100
 

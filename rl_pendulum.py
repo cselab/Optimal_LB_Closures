@@ -22,6 +22,7 @@ from stable_baselines3.common.env_checker import check_env
 
 from lib.environments import get_environment
 from lib.environments.kolmogorov import KolmogorovEnvironment
+from lib.environments.pendulum import two_pendulums
 from lib.policy import get_rl_algo
 from lib.distributions import ElementwiseNormal
 from lib.models import get_actor_critic
@@ -53,99 +54,35 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--task", type=str, default="CartPole-v1")
     parser.add_argument("--model", type=str, default="ppo")
     parser.add_argument("--reward_threshold", type=int, default=500)
-    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--buffer_size", type=int, default=20000)
     parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=100)
+    parser.add_argument("--step_per_epoch", type=int, default=20000)
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
     parser.add_argument("--logdir", type=str, default="log")
-    parser.add_argument("--gamma", type=float, default=0.90)
-    parser.add_argument("--lr", help='learning rate', type=float, default=1e-4)
+    parser.add_argument("--gamma", type=float, default=0.99)
+    parser.add_argument("--lr", help='learning rate', type=float, default=3e-4)
     parser.add_argument("--repeat_per_collect", type=int, default=1)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--step_per_collect", type=int, default=200) 
-    parser.add_argument("--architecture", type=int, default=[64, 64])
-    parser.add_argument("--backbone_out_dim", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--step_per_collect", type=int, default=2048) 
+    parser.add_argument("--architecture", type=int, default=[32])
+    parser.add_argument("--backbone_out_dim", type=int, default=32)
 
     return parser.parse_known_args()[0]
 
 
-def create_env(kwargs1, kwargs2, max_t=50000, min_a=-1., max_a=1.):
+def create_env(omega=1., N1=100, N2=100, min_a=-1., max_a=1.):
     """
     creates the environemnt and applyes wrappers to action and
     observations space and sets time limit.
     """
-    env = KolmogorovEnvironment(kwargs1, kwargs2)
-    env = TimeLimit(env, max_episode_steps=max_t)
+    env = two_pendulums(omega=omega, N1=N1, N2=N2)
+    #env = TimeLimit(env, max_episode_steps=N1)
     env = RescaleAction(env, min_action=min_a, max_action=max_a)
-    env = TransformObservation(env, lambda obs: (obs/20))
+    #env = TransformObservation(env, lambda obs: (obs/20))
     return env
-
-
-class Backbone(nn.Module):
-
-    def __init__(self, out_size=64, device="cpu"):
-        super(Backbone, self).__init__()
-        
-        ### Convolutional section
-        self.encoder_cnn = nn.Sequential(
-            nn.Conv2d(1, 2, 3, stride=2, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(2, 4, 3, stride=2, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(4, 8, 3, stride=2, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(2,2)
-        )
-        
-        ### Linear section
-        self.encoder_lin = nn.Sequential(
-            nn.Linear(512, out_size),
-            nn.ReLU(True),
-        )
-        
-    #def forward(self, x):
-    #    x = x.reshape(x.shape[0],1,128,128)
-    #    x = self.encoder_cnn(x)
-    #    x = x.reshape(x.shape[0], -1)
-    #    x = self.encoder_lin(x)
-    #    return x
-
-    def forward(self, obs, state=None, info={}):
-        if not isinstance(obs, torch.Tensor):
-            obs = torch.tensor(obs, dtype=torch.float, device=device)
-        batch = obs.shape[0]
-
-        obs = self.encoder_cnn(obs.reshape(batch, 1, 128, 128))
-        obs = obs.reshape(batch, -1)
-        logits = self.encoder_lin(obs)
-
-        return logits, state
-
-class simple_backbone(nn.Module):
-
-    def __init__(self, in_dim=1, out_size=32, device="cpu"):
-        super(simple_backbone, self).__init__()
-        
-        ### Linear section
-        self.encoder_lin = nn.Sequential(
-            nn.Linear(in_dim, out_size),
-            nn.ReLU(True),
-        )
-
-    def forward(self, obs, state=None, info={}):
-        if not isinstance(obs, torch.Tensor):
-            obs = torch.tensor(obs, dtype=torch.float, device=device)
-        batch = obs.shape[0]
-
-        obs = obs.reshape(batch,128,128)
-        obs = obs.mean(dim=(1,2))
-        logits = self.encoder_lin(obs)
-
-        return logits, state
-
 
 
 if __name__ == '__main__':
@@ -163,24 +100,15 @@ if __name__ == '__main__':
     #######################################################################################################
     ####### environments ##################################################################################
     #######################################################################################################
-    u0_path = "/home/pfischer/XLB/vel_init/velocity_burn_in_1806594.npy" #4096x4096 simulation
-    rho0_path = "/home/pfischer/XLB/vel_init/density_burn_in_1806594.npy" #4096x4096 simulation
-    kwargs1, T1,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #cgs 
-    kwargs2, T2,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #fgs
-    #check if cgs time is a factor of fgs time
-    assert (T2%T1 == 0)
-    env = create_env(kwargs1, kwargs2, max_t=T1)
-    train_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, max_t=T1) for _ in range(args.train_num)])
-    test_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, max_t=T1) for _ in range(args.test_num)])
+    env = create_env(omega=1., N1=100, N2=100)
+    train_env = DummyVectorEnv([lambda: create_env(omega=1., N1=100, N2=100) for _ in range(args.train_num)])
+    test_env = DummyVectorEnv([lambda: create_env(omega=1., N1=100, N2=100) for _ in range(args.test_num)])
 
     #Policy
     assert env.observation_space.shape is not None  # for mypy
     assert env.action_space.shape is not None
 
-    #net = Net(state_shape=env.observation_space.shape, hidden_sizes=args.architecture, device=device).to(device)
-    net = Backbone(out_size=args.backbone_out_dim, device=device).to(device)
-    #net = simple_backbone(device=device).to(device)
-    #net = Net1(state_shape=env.observation_space.shape, action_shape=(64,)).to(device)
+    net = Net(state_shape=env.observation_space.shape, hidden_sizes=args.architecture, device=device).to(device)
     actor = ActorProb(preprocess_net=net, action_shape=env.action_space.shape, max_action=1,
                      preprocess_net_output_dim=args.backbone_out_dim, device=device).to(device)
     critic = Critic(preprocess_net=net, preprocess_net_output_dim=args.backbone_out_dim, device=device).to(device)
@@ -221,7 +149,7 @@ if __name__ == '__main__':
         train_collector=train_collector,
         test_collector=test_collector,
         max_epoch=args.max_epoch,
-        step_per_epoch=int(T1/4),     #args.step_per_epoch,
+        step_per_epoch=args.step_per_epoch,
         repeat_per_collect=args.repeat_per_collect,             
         episode_per_test=args.episode_per_test,
         batch_size=args.batch_size,
@@ -234,9 +162,8 @@ if __name__ == '__main__':
 
     result = trainer.run()
 
-
     #save policy
-    torch.save(policy.state_dict(), "global_omega.pth")
+    torch.save(policy.state_dict(), "pendulum.pth")
     print("run is finished")
 
  
