@@ -272,6 +272,114 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         }
 
 
+#copy of the above environment but with simple state output
+class KolmogorovEnvironment2(BaseEnvironment, ABC):
+    
+    def __init__(self, kwargs1, kwargs2, step_factor=1):
+        super().__init__()
+        #Coarse-Grid-Simulation <- kwargs1
+        self.kwargs1 = kwargs1
+        self.cgs = Kolmogorov_flow(**kwargs1)
+        self.omg = self.cgs.omega
+        self.f1 = self.cgs.assign_fields_sharded()
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+       
+
+        #Fine-Grid-Simulation <- kwargs2
+        self.kwargs2 = kwargs2
+        self.fgs = Kolmogorov_flow(**kwargs2)
+        self.f2 = self.fgs.assign_fields_sharded()
+        self.rho2, self.u2 = get_velocity(self.f2, self.fgs)
+        
+        #other stuff  
+        self.factor = int(self.fgs.downsamplingFactor/self.cgs.downsamplingFactor)
+        self.counter = 0
+        print((int(self.cgs.nx/2)))
+        self.observation_space = spaces.Box(low=0, high=20, shape=(int(self.cgs.nx/2),), dtype=np.float64)
+        self.action_space = spaces.Box(low=0.9, high=1.2, shape=(1,), dtype=np.float32)
+        self.step_factor = step_factor
+
+    def seed(self, seed):
+        np.random.seed(seed)
+
+    def reset(self, seed=None, **kwargs):
+        super().reset(seed=seed, **kwargs)
+        self.counter = 0
+        self.cgs.omega = self.omg
+        self.cgs = Kolmogorov_flow(**self.kwargs1)
+        self.fgs = Kolmogorov_flow(**self.kwargs2)
+        self.f1 = self.cgs.assign_fields_sharded()
+        self.f2 = self.fgs.assign_fields_sharded()
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+        self.rho2, self.u2 = get_velocity(self.f2, self.fgs)
+
+        v1 = vorticity_2d(self.u1, self.cgs.dx_eff)
+        #v1 = get_vorticity(self.f1, self.cgs)
+        #return v1, info
+        _, energy_spectrum = energy_spectrum_2d(self.u1)
+
+        return energy_spectrum, {}
+    
+    def step(self, action):
+        if not (np.any(self.action_space.low <= action) and np.any(action <= self.action_space.high)):
+            print("WARNING: Action is not in action space")
+            print(f"action={action}; omega={self.cgs.omega}")
+            action = np.clip(action, self.action_space.low, self.action_space.high)
+            
+
+        # load in action and get rid of channel dimension
+        #print(action.shape, self.action_space.shape)
+        assert action.shape == self.action_space.shape
+
+        self.cgs.omega = self.omg * np.float64(action[0])
+        
+        for i in range(self.step_factor):
+            self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
+            for j in range(self.factor):
+                self.f2, _ = self.fgs.step(self.f2, self.factor*self.counter+i, return_fpost=self.fgs.returnFpost)
+            self.counter += 1
+
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+        self.rho2, self.u2 = get_velocity(self.f2, self.fgs)
+
+        #v1 = get_vorticity(self.f1, self.cgs)
+        #v2 = get_vorticity(self.f2, self.fgs)
+        v1 = vorticity_2d(self.u1, self.cgs.dx_eff)
+        v2 = vorticity_2d(self.u2, self.fgs.dx_eff)
+
+        corr = np.corrcoef(v1.flatten(), v2.flatten())[0, 1]
+        terminated = bool(corr<0.97)
+        reward = (corr-0.97)/0.03
+        
+        #compute energy spectrum of cgs
+        _, energy_spectrum = energy_spectrum_2d(self.u1)
+        
+        return energy_spectrum, reward, terminated, False, {}
+
+    def render(self):
+        #v1 = get_vorticity(self.f1, self.cgs)
+        #v2 = get_vorticity(self.f2, self.fgs)
+        v1 = vorticity_2d(self.u1, self.cgs.dx_eff)
+        v2 = vorticity_2d(self.u2, self.fgs.dx_eff)
+        #print(f"{1}:", np.mean(((v1-v2)**2))/np.mean((1e-10+(v1**2))))
+        print(np.corrcoef(v1.flatten(), v2.flatten())[0, 1])
+        # plot v1 and v2 next to each other
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 5))
+        ax1.imshow(v1, vmin=-20, vmax=20, cmap=sn.cm.icefire)
+        ax2.imshow(v2, vmin=-20, vmax=20, cmap=sn.cm.icefire)
+        ax3.imshow((v1-v2)**2)
+        ax1.axis('off')
+        ax2.axis('off')
+        ax3.axis('off')
+        ax1.set_title("CGS")
+        ax2.set_title("FGS")
+        ax3.set_title("MSE")
+        #plot a common colorbar
+        #fig.colorbar(ax1.imshow(v1, cmap=sn.cm.icefire), ax=[ax1, ax2], orientation='vertical')
+        plt.show()
+
+
+
 def main():
     #here a trivial run of the environment is displayed
     #path to initial velocity and density field
