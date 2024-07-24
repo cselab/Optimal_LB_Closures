@@ -79,7 +79,7 @@ def create_env(kwargs1, kwargs2, max_t=50000, min_a=-1., max_a=1.):
     """
     env = KolmogorovEnvironment(kwargs1, kwargs2)
     env = TimeLimit(env, max_episode_steps=max_t)
-    env = RescaleAction(env, min_action=min_a, max_action=max_a)
+    #env = RescaleAction(env, min_action=min_a, max_action=max_a)
     env = TransformObservation(env, lambda obs: (obs/20))
     return env
 
@@ -194,7 +194,7 @@ if __name__ == '__main__':
         dist_fn=dist,
         action_space=env.action_space,
         deterministic_eval=True,
-        action_scaling=False,
+        action_scaling=True,
     )
 
     #Collectors
