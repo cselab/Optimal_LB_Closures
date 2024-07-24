@@ -32,7 +32,7 @@ from src.utils import *
 
 class KolmogorovEnvironment(BaseEnvironment, ABC):
     
-    def __init__(self, kwargs1, kwargs2):
+    def __init__(self, kwargs1, kwargs2, step_factor=1):
         super().__init__()
         #Coarse-Grid-Simulation <- kwargs1
         self.kwargs1 = kwargs1
@@ -52,7 +52,8 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.factor = int(self.fgs.downsamplingFactor/self.cgs.downsamplingFactor)
         self.counter = 0
         self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float64)
-        self.action_space = spaces.Box(low=0.98, high=1.02, shape=(1,), dtype=np.float32)
+        self.action_space = spaces.Box(low=0.9, high=1.2, shape=(1,), dtype=np.float32)
+        self.step_factor = step_factor
 
     def seed(self, seed):
         np.random.seed(seed)
@@ -86,10 +87,11 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
 
         self.cgs.omega = self.omg * np.float64(action[0])
         
-        self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
-        for i in range(self.factor):
-            self.f2, _ = self.fgs.step(self.f2, self.factor*self.counter+i, return_fpost=self.fgs.returnFpost)
-        self.counter += 1
+        for i in range(self.step_factor):
+            self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
+            for j in range(self.factor):
+                self.f2, _ = self.fgs.step(self.f2, self.factor*self.counter+i, return_fpost=self.fgs.returnFpost)
+            self.counter += 1
 
         self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
         self.rho2, self.u2 = get_velocity(self.f2, self.fgs)
