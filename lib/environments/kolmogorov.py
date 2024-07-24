@@ -275,7 +275,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
 #copy of the above environment but with simple state output
 class KolmogorovEnvironment2(BaseEnvironment, ABC):
     
-    def __init__(self, kwargs1, kwargs2, step_factor=1):
+    def __init__(self, kwargs1, kwargs2, step_factor=1, max_episode_steps=100):
         super().__init__()
         #Coarse-Grid-Simulation <- kwargs1
         self.kwargs1 = kwargs1
@@ -294,10 +294,10 @@ class KolmogorovEnvironment2(BaseEnvironment, ABC):
         #other stuff  
         self.factor = int(self.fgs.downsamplingFactor/self.cgs.downsamplingFactor)
         self.counter = 0
-        print((int(self.cgs.nx/2)))
-        self.observation_space = spaces.Box(low=0, high=20, shape=(int(self.cgs.nx/2),), dtype=np.float64)
-        self.action_space = spaces.Box(low=0.9, high=1.2, shape=(1,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(int(self.cgs.nx/2 - 1),), dtype=np.float64)
+        self.action_space = spaces.Box(low=0.9, high=1.1, shape=(1,), dtype=np.float32)
         self.step_factor = step_factor
+        self.max_episode_steps=max_episode_steps
 
     def seed(self, seed):
         np.random.seed(seed)
@@ -336,7 +336,8 @@ class KolmogorovEnvironment2(BaseEnvironment, ABC):
         for i in range(self.step_factor):
             self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
             for j in range(self.factor):
-                self.f2, _ = self.fgs.step(self.f2, self.factor*self.counter+i, return_fpost=self.fgs.returnFpost)
+                self.f2, _ = self.fgs.step(self.f2, self.factor*self.counter+j, return_fpost=self.fgs.returnFpost)
+
             self.counter += 1
 
         self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
@@ -349,6 +350,7 @@ class KolmogorovEnvironment2(BaseEnvironment, ABC):
 
         corr = np.corrcoef(v1.flatten(), v2.flatten())[0, 1]
         terminated = bool(corr<0.97)
+        truncated = bool(self.counter>self.max_episode_steps)
         reward = (corr-0.97)/0.03
         
         #compute energy spectrum of cgs
