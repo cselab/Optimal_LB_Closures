@@ -297,7 +297,7 @@ class KolmogorovEnvironment2(BaseEnvironment, ABC):
         self.observation_space = spaces.Box(low=0, high=1, shape=(int(self.cgs.nx/2 - 1),), dtype=np.float64)
         self.action_space = spaces.Box(low=0.9, high=1.1, shape=(1,), dtype=np.float32)
         self.step_factor = step_factor
-        self.max_episode_steps=max_episode_steps
+        self.max_episode_steps= int(step_factor*max_episode_steps)
 
     def seed(self, seed):
         np.random.seed(seed)
@@ -356,7 +356,7 @@ class KolmogorovEnvironment2(BaseEnvironment, ABC):
         #compute energy spectrum of cgs
         _, energy_spectrum = energy_spectrum_2d(self.u1)
         
-        return energy_spectrum, reward, terminated, False, {}
+        return energy_spectrum, reward, terminated, truncated, {}
 
     def render(self):
         #v1 = get_vorticity(self.f1, self.cgs)
