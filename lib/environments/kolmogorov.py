@@ -30,6 +30,10 @@ from my_flows.helpers import get_kwargs, get_vorticity, get_velocity
 from src.utils import *
 
 
+#first Kolmogorov Environment
+#State: vorticity
+#Action: global alpha
+#Reward: Scaled Vorticity Correlation
 class KolmogorovEnvironment(BaseEnvironment, ABC):
     
     def __init__(self, kwargs1, kwargs2, step_factor=1):
@@ -273,6 +277,10 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
 
 
 #copy of the above environment but with simple state output
+#first Kolmogorov Environment
+#State: Enerty Spectrum
+#Action: global alpha
+#Reward: Scaled Vorticity Correlation
 class KolmogorovEnvironment2(BaseEnvironment, ABC):
     
     def __init__(self, kwargs1, kwargs2, step_factor=1, max_episode_steps=100):
