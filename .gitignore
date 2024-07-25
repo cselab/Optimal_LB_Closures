@@ -10,5 +10,6 @@
 /log/
 /gifs/
 /results/data/
+/dump/
 
 *__pycache__/

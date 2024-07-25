@@ -59,24 +59,15 @@ class AdvectionEnvironment(BaseEnvironment, ABC):
         self.dns_nt = int(self.T / self.dns_dt)
 
         # limit action space to [-1, 1] to avoid too large changes
-        self.action_space = spaces.Box(low=-1.,
-                                       high=1.,
-                                       shape=(self.img_size, self.img_size),
-                                       dtype=np.float32)
+        self.action_space = spaces.Box(low=-1., high=1., shape=(self.img_size, self.img_size), dtype=np.float32)
 
         # data is zero mean and unit variance, choose observation space in range [-3, 3] to account for outliers
-        self.observation_space = spaces.Box(low=-3.,
-                                            high=3.,
-                                            shape=(self.img_size, self.img_size),
-                                            dtype=np.float32)
+        self.observation_space = spaces.Box(low=-3., high=3., shape=(self.img_size, self.img_size), dtype=np.float32)
 
         # Set up to load data for initial conditions of field
-        _train_dataset, _, _test_dataset = get_train_val_test_initial_conditions_dataset(dataset_name=self.dataset_name,
-                                                                                         img_size=self.dns_img_size)
+        _train_dataset, _, _test_dataset = get_train_val_test_initial_conditions_dataset(dataset_name=self.dataset_name,img_size=self.dns_img_size)
         self.dataset = _train_dataset if train else _test_dataset
-        self.data_loader = DataLoader(self.dataset,
-                                      batch_size=1,
-                                      shuffle=True)
+        self.data_loader = DataLoader(self.dataset,batch_size=1,shuffle=True)
         self.data_iter = iter(self.data_loader)
 
     def reset(self, *args, **kwargs):
@@ -153,7 +144,7 @@ class AdvectionEnvironment(BaseEnvironment, ABC):
 
     def _do_terminate(self):
         err = self.mean_agent_abs_error(self.state, self.gt_state)
-        if err >= self.mse_threshold and self.step_count >= self.ep_len or self.step_count >= self.max_ep_len:
+        if err >= self.mse_threshold  or self.step_count >= self.max_ep_len:
             return True
         else:
             return False

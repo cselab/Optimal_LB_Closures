@@ -70,9 +70,8 @@ class IRCNN(nn.Module):
         L.append(nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=2, dilation=2, bias=True,
                            padding_mode=padding_mode))
         L.append(nn.ReLU(inplace=True))
-        L.append(
-            nn.Conv2d(in_channels=feature_dim, out_channels=out_nc, kernel_size=3, stride=1, padding=1, dilation=1, bias=True,
-                      padding_mode=padding_mode))
+        L.append(nn.Conv2d(in_channels=feature_dim, out_channels=out_nc, kernel_size=3, stride=1, padding=1, dilation=1, bias=True,
+                            padding_mode=padding_mode))
         self.model = sequential(*L)
 
         # remove last layer, since we want to use the output of the second last layer as feature vector

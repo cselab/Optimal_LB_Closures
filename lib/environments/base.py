@@ -11,7 +11,6 @@ from tianshou.data import Batch
 class BaseEnvironment(ABC, gym.Env):
     def __init__(self):
         super().__init__()
-        self.ep_len = None
 
     @abstractmethod
     def reset(self, *args, **kwargs):
