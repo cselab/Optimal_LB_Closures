@@ -380,6 +380,11 @@ class KolmogorovEnvironment2(BaseEnvironment, ABC):
         #fig.colorbar(ax1.imshow(v1, cmap=sn.cm.icefire), ax=[ax1, ax2], orientation='vertical')
         plt.show()
 
+    def get_spectra(self):
+        _, E1 = energy_spectrum_2d(self.u1)
+        _, E2 = energy_spectrum_2d(self.u2)
+        return E1, E2
+
 
 
 def main():
