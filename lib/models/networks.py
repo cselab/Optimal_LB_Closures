@@ -3,38 +3,87 @@ import torch
 from torch import nn
 from tianshou.data.batch import Batch
 
+SIGMA_MIN = -20
+SIGMA_MAX = 2
 
-class Backbone(nn.Module):
 
-    def __init__(self, device="cpu", in_channels=1, feature_dim=64, out_channels=1, padding_mode="circular"):
-        super(Backbone, self).__init__()
+class FcNN(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular"):
+        super(FcNN, self).__init__()
+        self.device = device
         
         ### Convolutional section
         self.fcnn = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1, bias=True,
-                      padding_mode=padding_mode)),
-            nn.ReLU(True),
-            nn.Conv2d(2, 4, 3, stride=2, padding=1),
-            nn.ReLU(True),
-            nn.Conv2d(4, 8, 3, stride=2, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(2,2)
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True,padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
         )
         
-        ### Linear section
-        self.encoder_lin = nn.Sequential(
-            nn.Linear(512, out_size),
-            nn.ReLU(True),
-        )
-        
-
     def forward(self, obs, state=None, info={}):
         if not isinstance(obs, torch.Tensor):
-            obs = torch.tensor(obs, dtype=torch.float, device=device)
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
         batch = obs.shape[0]
-
-        obs = self.encoder_cnn(obs.reshape(batch, 1, 128, 128))
-        obs = obs.reshape(batch, -1)
-        logits = self.encoder_lin(obs)
+        logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
 
         return logits, state
+
+
+class MyFCNNActorProb(nn.Module):
+
+    def __init__(self, action_shape, device="cpu", in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular"):
+        super(MyFCNNActorProb, self).__init__()
+        self.device = device
+        self.output_shape = action_shape
+        
+        ### Convolutional section
+        self.fcnn = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True,padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+        )
+
+        self.mu = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.ReLU(inplace=True)
+        )
+        self.sigma = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.ReLU(inplace=True)
+        )
+        
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
+        mu = self.mu(logits)
+        #sigma = self.sigma(logits)
+        #if not self._unbounded:
+        #    mu = self._max * torch.tanh(mu)
+        #if self._c_sigma:
+        sigma = torch.clamp(self.sigma(logits), min=SIGMA_MIN, max=SIGMA_MAX).exp()
+        #else:
+        #    shape = [1] * len(mu.shape)
+        #    shape[1] = -1
+        #    sigma = (self.sigma_param.view(shape) + torch.zeros_like(mu)).exp()
+        
+        #mu, sigma = mu.reshape(self.output_shape), sigma.reshape(self.output_shape)
+        mu, sigma = mu.reshape(batch,128,128), sigma.reshape(batch,128,128)
+        return (mu, sigma), state
+
+
