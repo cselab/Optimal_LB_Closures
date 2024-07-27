@@ -406,7 +406,7 @@ class KolmogorovEnvironment3(BaseEnvironment, ABC):
         #Coarse-Grid-Simulation <- kwargs1
         self.kwargs1 = kwargs1
         self.cgs = Kolmogorov_flow(**kwargs1)
-        self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny,1)))
+        self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
         self.cgs.omg = np.copy(self.omg)
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
@@ -422,7 +422,7 @@ class KolmogorovEnvironment3(BaseEnvironment, ABC):
         self.factor = int(self.fgs.downsamplingFactor/self.cgs.downsamplingFactor)
         self.counter = 0
         self.observation_space = spaces.Box(low=0, high=1, shape=(int(self.cgs.nx/2 - 1),), dtype=np.float64)
-        self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny, 1), dtype=np.float32)
+        self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
         self.step_factor = step_factor
         self.max_episode_steps= int(step_factor*max_episode_steps)
 
@@ -448,16 +448,25 @@ class KolmogorovEnvironment3(BaseEnvironment, ABC):
         return energy_spectrum, {}
     
     def step(self, action):
-        if not (np.any(self.action_space.low <= action) and np.any(action <= self.action_space.high)):
-            print("WARNING: Action is not in action space")
-            print(f"action={action}; omega={self.cgs.omega}")
-            action = np.clip(action, self.action_space.low, self.action_space.high)
-            
-
         # load in action and get rid of channel dimension
-        #print(action.shape, self.action_space.shape)
-        assert action.shape == self.action_space.shape
-        self.cgs.omega = np.copy(self.omg * action)
+        #action = action[0]
+        if action.shape != self.action_space.shape:
+            try:
+                action = action.reshape(self.action_space.shape)
+            except:
+                print("action reshaping didn't work")
+
+        #print(f"desired = {self.action_space.shape}, actual={action.shape}")
+        #assert action.shape == self.action_space.shape
+
+        if (np.any(self.action_space.low > action) or np.any(action > self.action_space.high)):
+            #print("WARNING: Action is not in action space")
+            #print(f"action={action}; omega={self.cgs.omega}")
+            action = np.clip(action, self.action_space.low, self.action_space.high)
+
+
+
+        self.cgs.omega = np.copy(self.omg * action.reshape(self.omg.shape))
         
         for i in range(self.step_factor):
             self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
