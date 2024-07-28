@@ -124,7 +124,7 @@ if __name__ == '__main__':
     )
 
     #Collectors
-    train_collector = Collector(, policy=policy,, env=train_env,, buffer=VectorReplayBuffer(args.buffer_size, len(train_env)))
+    train_collector = Collector(policy=policy, env=train_env, buffer=VectorReplayBuffer(args.buffer_size, len(train_env)))
     test_collector = Collector(policy=policy, env=test_env)
     train_collector.reset()
     test_collector.reset()
