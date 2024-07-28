@@ -33,6 +33,7 @@ from lib.models import get_actor_critic
 from lib.utils import str2bool, Config, dict_to_wandb_table, restrict_to_num_threads
 from lib.trainer import MyOnpolicyTrainer
 from lib.models import FcNN, MyFCNNActorProb
+from lib.custom_tianshou.my_logger import WandbLogger2
 
 #temporary solution for xlb imports
 sys.path.append(os.path.abspath('/home/pfischer/XLB'))
@@ -119,7 +120,7 @@ if __name__ == '__main__':
     optim = torch.optim.AdamW(actor.parameters(), lr=0.0001)
     dist = torch.distributions.Normal
     policy = PGPolicy(model=actor,optim=optim, dist_fn=dist, action_space=env.action_space,
-        discount_factor=0.97,reward_normalization=True, deterministic_eval=True,
+        discount_factor=0.97,reward_normalization=False, deterministic_eval=True,
         observation_space=env.observation_space, action_scaling=True, action_bound_method = "tanh",
     )
 
@@ -130,7 +131,7 @@ if __name__ == '__main__':
     test_collector.reset()
 
     #wandb Logger
-    log_path = os.path.join(args.logdir, args.task, "pg2")
+    log_path = os.path.join(args.logdir, args.task, "pg")
     #logger = WandbLogger2(train_interval=1000, test_interval = 1, update_interval = 1000, save_interval = 1, config=args)
     logger = WandbLogger2(config=args)
     writer = SummaryWriter(log_path)
