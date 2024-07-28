@@ -583,7 +583,7 @@ class KolmogorovEnvironment4(BaseEnvironment, ABC):
         #assert action.shape == self.action_space.shape
 
         if (np.any(self.action_space.low > action) or np.any(action > self.action_space.high)):
-            #print("WARNING: Action is not in action space")
+            print("WARNING: Action is not in action space")
             #print(f"action={action}; omega={self.cgs.omega}")
             action = np.clip(action, self.action_space.low, self.action_space.high)
 

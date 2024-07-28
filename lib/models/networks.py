@@ -35,6 +35,9 @@ class FcNN(nn.Module):
         return logits, state
 
 
+
+# different to tianshou, this network has activation functions in the last layer such that 
+# the constraints |mu| <= 1, 0<=sigma<=1 are satisfyed automatically
 class MyFCNNActorProb(nn.Module):
 
     def __init__(self, action_shape, device="cpu", in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular"):
@@ -57,12 +60,17 @@ class MyFCNNActorProb(nn.Module):
 
         self.mu = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
                          bias=True, padding_mode=padding_mode),
-                         nn.ReLU(inplace=True)
+                         nn.Tanh()
         )
         self.sigma = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
                          bias=True, padding_mode=padding_mode),
-                         nn.ReLU(inplace=True)
+                         nn.Sigmoid()
         )
+        #initialize bias to quarantee that the network starts with max standard deviation
+        with torch.no_grad():
+            self.sigma[0].bias.fill_(5.0)
+        
+        print(f"bias is initialized to {self.sigma[0].bias}")
         
         
     def forward(self, obs, state=None, info={}):
@@ -72,11 +80,11 @@ class MyFCNNActorProb(nn.Module):
 
         logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
         mu = self.mu(logits)
-        #sigma = self.sigma(logits)
+        sigma = self.sigma(logits)
         #if not self._unbounded:
         #    mu = self._max * torch.tanh(mu)
         #if self._c_sigma:
-        sigma = torch.clamp(self.sigma(logits), min=SIGMA_MIN, max=SIGMA_MAX).exp()
+        #    sigma = torch.clamp(self.sigma(logits), min=SIGMA_MIN, max=SIGMA_MAX).exp()
         #else:
         #    shape = [1] * len(mu.shape)
         #    shape[1] = -1
