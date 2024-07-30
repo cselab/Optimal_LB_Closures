@@ -66,9 +66,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--repeat_per_collect", type=int, default=1)
     parser.add_argument("--episode_per_test", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--step_per_collect", type=int, default=200) 
-    parser.add_argument("--architecture", type=int, default=[64, 64])
-    parser.add_argument("--backbone_out_dim", type=int, default=64)
+    parser.add_argument("--step_per_collect", type=int, default=200)
 
     return parser.parse_known_args()[0]
 
@@ -79,7 +77,7 @@ def create_env(kwargs1, kwargs2, min_a=-1., max_a=1., step_factor=10, max_t=100)
     observations space and sets time limit.
     """
     env = KolmogorovEnvironment4(kwargs1, kwargs2, step_factor=step_factor, max_episode_steps=max_t)
-    env = TransformObservation(env, lambda obs: (obs/16))
+    env = TransformObservation(env, lambda obs: (obs/15))
     #env = TimeLimit(env, max_episode_steps=max_t)
     return env
 
@@ -117,7 +115,7 @@ if __name__ == '__main__':
 
     #Policy
     actor = MyFCNNActorProb(env.action_space.shape, device=device).to(device)
-    optim = torch.optim.AdamW(actor.parameters(), lr=0.0001)
+    optim = torch.optim.AdamW(actor.parameters(), lr=0.001)
     dist = torch.distributions.Normal
     policy = PGPolicy(model=actor,optim=optim, dist_fn=dist, action_space=env.action_space,
         discount_factor=0.97,reward_normalization=False, deterministic_eval=True,
@@ -147,8 +145,8 @@ if __name__ == '__main__':
         step_per_epoch=101,
         repeat_per_collect=1,
         episode_per_test=1,
-        batch_size=101,
-        episode_per_collect=1,
+        batch_size=16,
+        episode_per_collect=3,
         show_progress=True,
         logger=logger,
         stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
@@ -158,7 +156,7 @@ if __name__ == '__main__':
 
 
     #save policy
-    torch.save(policy.state_dict(), "global_omega_local_acts.pth")
+    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_3.pth")
     print("run is finished")
 
  
