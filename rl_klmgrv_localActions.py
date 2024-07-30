@@ -101,7 +101,7 @@ if __name__ == '__main__':
     rho0_path = "/home/pfischer/XLB/vel_init/density_burn_in_1806594.npy" #4096x4096 simulation
     kwargs1, T1,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #cgs 
     kwargs2, T2,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #fgs
-    step_factor=10
+    step_factor=5
     #check if cgs time is a factor of fgs time
     assert (T2%T1 == 0)
     env = create_env(kwargs1, kwargs2, step_factor=step_factor,  max_t=100)
@@ -156,7 +156,7 @@ if __name__ == '__main__':
 
 
     #save policy
-    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_3.pth")
+    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_4.pth")
     print("run is finished")
 
  

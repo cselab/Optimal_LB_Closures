@@ -67,8 +67,9 @@ class MyFCNNActorProb(nn.Module):
                          nn.Sigmoid()
         )
         #initialize bias to quarantee that the network starts with max standard deviation
-        with torch.no_grad():
-            self.sigma[0].bias.fill_(0.25)
+        #TODO: maybe torch.no_grad disables changing of beta at all times -> check this
+        #with torch.no_grad():
+        #   self.sigma[0].bias.fill_(0.1)
         
         print(f"bias is initialized to {self.sigma[0].bias}")
         
