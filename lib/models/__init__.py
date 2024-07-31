@@ -1,7 +1,7 @@
 from lib.models.pretrained_denoisers import AdvectionIRCNN, BurgersIRCNN
 from lib.models.wrappers import MarlModel
 from tianshou.utils.net.common import ActorCritic
-from lib.models.networks import FcNN, MyFCNNActorProb, MyFCNNActorProb2
+from lib.models.networks import FcNN, MyFCNNActorProb, MyFCNNActorProb2, MyFcnnActor, MyCritc
 
 
 def get_actor_critic(name, device, env, action_dim):

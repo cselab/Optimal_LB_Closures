@@ -9,7 +9,7 @@ SIGMA_MAX = 2
 
 class FcNN(nn.Module):
 
-    def __init__(self, device="cpu", in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular"):
+    def __init__(self, in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular", device="cpu"):
         super(FcNN, self).__init__()
         self.device = device
         
@@ -27,12 +27,12 @@ class FcNN(nn.Module):
         )
         
     def forward(self, obs, state=None, info={}):
-        if not isinstance(obs, torch.Tensor):
-            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
-        batch = obs.shape[0]
-        logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
-
-        return logits, state
+        #if not isinstance(obs, torch.Tensor):
+        #    obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        #batch = obs.shape[0]
+        #logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
+        #return logits, state
+        return self.fcnn(obs)
 
 
 
@@ -132,5 +132,63 @@ class MyFCNNActorProb2(nn.Module):
         
         return (mu, sigma), state
 
+
+
+
+class MyFcnnActor(nn.Module):
+
+    def __init__(self, backbone, device="cpu", in_channels=1, feature_dim=1, out_channels=1, padding_mode="circular"):
+        super(MyFcnnActor, self).__init__()
+        self.device = device
+        self.backbone = backbone
+
+        self.mu = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.Tanh()
+        )
+        self.sigma = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.Sigmoid()
+        )
+        #initialize bias to quarantee that the network starts with max standard deviation
+        #TODO: maybe torch.no_grad disables changing of beta at all times -> check this
+        #with torch.no_grad():
+        #   self.sigma[0].bias.fill_(0.1)
+        #print(f"bias is initialized to {self.sigma[0].bias}")
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.backbone(obs.reshape(batch, 1, 128, 128))
+        mu = self.mu(logits).reshape(batch,128,128)
+        sigma = self.sigma(logits).reshape(batch,128,128)
+    
+        return (mu, sigma), state
+
+
+class MyCritc(nn.Module):
+
+    def __init__(self, backbone, device="cpu", in_features=128*128, out_features=1):
+        super(MyCritc, self).__init__()
+        self.device = device
+        self.backbone = backbone
+
+        self.linear = nn.Sequential(torch.nn.Linear(in_features, out_features, bias=True, device=self.device),
+                        nn.ReLU(inplace=True)
+        )
+
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.backbone(obs.reshape(batch, 1, 128, 128))
+        print(logits.shape)
+        adv = self.linear(logits.reshape(batch, -1))
+    
+        return adv, state
 
 
