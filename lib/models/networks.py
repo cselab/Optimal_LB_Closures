@@ -96,3 +96,41 @@ class MyFCNNActorProb(nn.Module):
         return (mu, sigma), state
 
 
+
+# 2nd version of myFCNN. It outputs a constant sigma to check for high variance errors
+class MyFCNNActorProb2(nn.Module):
+
+    def __init__(self, action_shape, device="cpu", in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular"):
+        super(MyFCNNActorProb2, self).__init__()
+        self.device = device
+        self.output_shape = action_shape
+        
+        ### Convolutional section
+        self.fcnn = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True,padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.Tanh()
+        )
+
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        mu = self.fcnn(obs.reshape(batch, 1, 128, 128)).reshape(batch,128,128)
+        sigma = torch.ones(batch, 128,128, device=self.device)*0.1
+        
+        return (mu, sigma), state
+
+
+

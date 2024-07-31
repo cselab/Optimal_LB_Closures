@@ -32,7 +32,7 @@ from lib.distributions import ElementwiseNormal
 from lib.models import get_actor_critic
 from lib.utils import str2bool, Config, dict_to_wandb_table, restrict_to_num_threads
 from lib.trainer import MyOnpolicyTrainer
-from lib.models import FcNN, MyFCNNActorProb
+from lib.models import FcNN, MyFCNNActorProb, MyFCNNActorProb2
 from lib.custom_tianshou.my_logger import WandbLogger2
 
 #temporary solution for xlb imports
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     rho0_path = "/home/pfischer/XLB/vel_init/density_burn_in_1806594.npy" #4096x4096 simulation
     kwargs1, T1,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #cgs 
     kwargs2, T2,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #fgs
-    step_factor=5
+    step_factor=2
     #check if cgs time is a factor of fgs time
     assert (T2%T1 == 0)
     env = create_env(kwargs1, kwargs2, step_factor=step_factor,  max_t=100)
@@ -114,7 +114,8 @@ if __name__ == '__main__':
     assert env.action_space.shape is not None
 
     #Policy
-    actor = MyFCNNActorProb(env.action_space.shape, device=device).to(device)
+    #actor = MyFCNNActorProb(env.action_space.shape, device=device).to(device)
+    actor = MyFCNNActorProb2(env.action_space.shape, device=device).to(device)
     optim = torch.optim.AdamW(actor.parameters(), lr=0.001)
     dist = torch.distributions.Normal
     policy = PGPolicy(model=actor,optim=optim, dist_fn=dist, action_space=env.action_space,
@@ -130,7 +131,6 @@ if __name__ == '__main__':
 
     #wandb Logger
     log_path = os.path.join(args.logdir, args.task, "pg")
-    #logger = WandbLogger2(train_interval=1000, test_interval = 1, update_interval = 1000, save_interval = 1, config=args)
     logger = WandbLogger2(config=args)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
@@ -142,10 +142,10 @@ if __name__ == '__main__':
         train_collector=train_collector,
         test_collector=test_collector,
         max_epoch=args.max_epoch,
-        step_per_epoch=101,
+        step_per_epoch=100,
         repeat_per_collect=1,
         episode_per_test=1,
-        batch_size=16,
+        batch_size=100,
         episode_per_collect=3,
         show_progress=True,
         logger=logger,
