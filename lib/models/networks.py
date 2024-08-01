@@ -27,13 +27,13 @@ class FcNN(nn.Module):
         )
         
     def forward(self, obs, state=None, info={}):
-        #if not isinstance(obs, torch.Tensor):
-        #    obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        if not isinstance(obs, torch.Tensor):
+            print("assertion")
+        #   obs = torch.tensor(obs, dtype=torch.float, device=self.device)
         #batch = obs.shape[0]
         #logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
         #return logits, state
         return self.fcnn(obs)
-
 
 
 # different to tianshou, this network has activation functions in the last layer such that 
@@ -170,13 +170,14 @@ class MyFcnnActor(nn.Module):
 
 class MyCritc(nn.Module):
 
-    def __init__(self, backbone, device="cpu", in_features=128*128, out_features=1):
+    def __init__(self, backbone, device="cpu", in_features=16384, out_features=1):
         super(MyCritc, self).__init__()
         self.device = device
         self.backbone = backbone
 
-        self.linear = nn.Sequential(torch.nn.Linear(in_features, out_features, bias=True, device=self.device),
-                        nn.ReLU(inplace=True)
+        self.linear = nn.Sequential(
+            nn.Linear(in_features, out_features),
+            nn.ReLU(True),
         )
 
         
@@ -186,9 +187,92 @@ class MyCritc(nn.Module):
         batch = obs.shape[0]
 
         logits = self.backbone(obs.reshape(batch, 1, 128, 128))
-        print(logits.shape)
+        obs = obs.reshape(batch, -1)
+        print("logits shape: ", logits.shape)
         adv = self.linear(logits.reshape(batch, -1))
+        print("adv shape: ", adv.shape)
+        adv = adv.reshape(batch)
+        print(adv)
     
         return adv, state
 
 
+class FcNN_flattend(nn.Module):
+
+    def __init__(self, in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular", device="cpu"):
+        super(FcNN_flattend, self).__init__()
+        self.device = device
+        
+        ### Convolutional section
+        self.fcnn = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True,padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+        )
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            print("reshaping")
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+        logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
+        logits = logits.reshape(batch, -1)
+        print("logits shape: ", logits.shape)
+        return logits, state
+
+
+class Backbone(nn.Module):
+
+    def __init__(self, out_size=64, device="cpu"):
+        super(Backbone, self).__init__()
+        
+        ### Convolutional section
+        self.encoder_cnn = nn.Sequential(
+            nn.Conv2d(1, 2, 3, stride=2, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(2, 4, 3, stride=2, padding=1),
+            nn.ReLU(True),
+            nn.Conv2d(4, 8, 3, stride=2, padding=1),
+            nn.ReLU(True),
+            nn.MaxPool2d(2,2)
+        )
+        
+        ### Linear section
+        self.encoder_lin = nn.Sequential(
+            nn.Linear(512, out_size),
+            nn.ReLU(True),
+        )
+
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=device)
+        batch = obs.shape[0]
+
+        obs = self.encoder_cnn(obs.reshape(batch, 1, 128, 128))
+        obs = obs.reshape(batch, -1)
+        logits = self.encoder_lin(obs)
+
+        return logits, state
+
+
+
+class FcNN_to_critic_converter(nn.Module):
+
+    def __init__(self, fcnn_backbone, device="cpu"):
+        super().__init__()
+        self.device = device
+        self.fcnn_backbone = fcnn_backbone
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+        logits = self.fcnn_backbone(obs.reshape(batch, 1, 128, 128))
+        logits = logits.reshape(batch, -1)
+        return logits, state

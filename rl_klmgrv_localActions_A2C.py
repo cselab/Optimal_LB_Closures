@@ -32,7 +32,7 @@ from lib.distributions import ElementwiseNormal
 from lib.models import get_actor_critic
 from lib.utils import str2bool, Config, dict_to_wandb_table, restrict_to_num_threads
 from lib.trainer import MyOnpolicyTrainer
-from lib.models import FcNN, MyFCNNActorProb, MyFCNNActorProb2, MyFcnnActor, MyCritc
+from lib.models import *
 from lib.custom_tianshou.my_logger import WandbLogger2
 
 #temporary solution for xlb imports
@@ -113,17 +113,18 @@ if __name__ == '__main__':
     assert env.observation_space.shape is not None  # for mypy
     assert env.action_space.shape is not None
 
-    #Policy
+    #try to run A2C
     backbone = FcNN(device=device).to(device)
     actor = MyFcnnActor(backbone, device=device).to(device)
-    #critic = MyCritc(backbone, device=device).to(device)
-    critic = Critic(preprocess_net=backbone, hidden_sizes=[64], preprocess_net_output_dim=128*128, device=device).to(device)
+    critic_backbone = FcNN_to_critic_converter(backbone, device=device).to(device)
+    critic = Critic(preprocess_net=critic_backbone, preprocess_net_output_dim=16384, device=device).to(device)
     optim = torch.optim.AdamW(actor.parameters(), lr=0.001)
     dist = torch.distributions.Normal
     policy = A2CPolicy(actor=actor, critic=critic, optim=optim, dist_fn=dist, action_space=env.action_space,
-        discount_factor=0.97,reward_normalization=False, deterministic_eval=True,
-        observation_space=env.observation_space, action_scaling=True, action_bound_method = "tanh",
+        discount_factor=0.97,reward_normalization=False, deterministic_eval=True, action_scaling=True,
     )
+
+
 
     #Collectors
     train_collector = Collector(policy=policy, env=train_env, buffer=VectorReplayBuffer(args.buffer_size, len(train_env)))
