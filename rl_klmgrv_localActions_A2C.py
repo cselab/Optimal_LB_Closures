@@ -101,7 +101,7 @@ if __name__ == '__main__':
     rho0_path = "/home/pfischer/XLB/vel_init/density_burn_in_1806594.npy" #4096x4096 simulation
     kwargs1, T1,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #cgs 
     kwargs2, T2,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #fgs
-    step_factor=10
+    step_factor=2
     #check if cgs time is a factor of fgs time
     assert (T2%T1 == 0)
     env = create_env(kwargs1, kwargs2, step_factor=step_factor,  max_t=100)
@@ -114,15 +114,14 @@ if __name__ == '__main__':
     assert env.action_space.shape is not None
 
     #try to run A2C
-    backbone = FcNN(device=device).to(device)
-    actor = MyFcnnActor(backbone, device=device).to(device)
-    critic_backbone = FcNN_to_critic_converter(backbone, device=device).to(device)
-    critic = Critic(preprocess_net=critic_backbone, preprocess_net_output_dim=16384, device=device).to(device)
+    actor = MyFCNNActorProb(device=device).to(device)
+    critic_backbone = Backbone(device=device).to(device)
+    critic = Critic(preprocess_net=critic_backbone, preprocess_net_output_dim=64, device=device).to(device)
     optim = torch.optim.AdamW(actor.parameters(), lr=0.001)
     dist = torch.distributions.Normal
     policy = A2CPolicy(actor=actor, critic=critic, optim=optim, dist_fn=dist, action_space=env.action_space,
         discount_factor=0.97,reward_normalization=False, deterministic_eval=True, action_scaling=True,
-        ent_coef = 0.25,
+        ent_coef = 0.25, action_bound_method="tanh",
     )
 
 
@@ -149,8 +148,8 @@ if __name__ == '__main__':
         step_per_epoch=100,
         repeat_per_collect=1,
         episode_per_test=1,
-        batch_size=6,
-        step_per_collect=6,
+        batch_size=16,
+        step_per_collect=32,
         #episode_per_collect=1,
         show_progress=True,
         logger=logger,
@@ -161,7 +160,7 @@ if __name__ == '__main__':
 
 
     #save policy
-    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_5.pth")
+    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_6.pth")
     print("run is finished")
 
  
