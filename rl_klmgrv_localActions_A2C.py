@@ -101,7 +101,7 @@ if __name__ == '__main__':
     rho0_path = "/home/pfischer/XLB/vel_init/density_burn_in_1806594.npy" #4096x4096 simulation
     kwargs1, T1,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #cgs 
     kwargs2, T2,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #fgs
-    step_factor=5
+    step_factor=10
     #check if cgs time is a factor of fgs time
     assert (T2%T1 == 0)
     env = create_env(kwargs1, kwargs2, step_factor=step_factor,  max_t=100)
@@ -122,6 +122,7 @@ if __name__ == '__main__':
     dist = torch.distributions.Normal
     policy = A2CPolicy(actor=actor, critic=critic, optim=optim, dist_fn=dist, action_space=env.action_space,
         discount_factor=0.97,reward_normalization=False, deterministic_eval=True, action_scaling=True,
+        ent_coef = 0.25,
     )
 
 
@@ -148,8 +149,9 @@ if __name__ == '__main__':
         step_per_epoch=100,
         repeat_per_collect=1,
         episode_per_test=1,
-        batch_size=16,
-        episode_per_collect=3,
+        batch_size=6,
+        step_per_collect=6,
+        #episode_per_collect=1,
         show_progress=True,
         logger=logger,
         #stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
@@ -159,7 +161,7 @@ if __name__ == '__main__':
 
 
     #save policy
-    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_4.pth")
+    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_5.pth")
     print("run is finished")
 
  
