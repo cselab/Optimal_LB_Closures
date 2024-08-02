@@ -1,0 +1,233 @@
+import numpy as np
+import torch
+from torch import nn
+from tianshou.data.batch import Batch
+
+SIGMA_MIN = -20
+SIGMA_MAX = 2
+
+
+class FcNN(nn.Module):
+
+    def __init__(self, in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular", device="cpu"):
+        super(FcNN, self).__init__()
+        self.device = device
+        
+        ### Convolutional section
+        self.fcnn = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True,padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+        )
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            print("assertion")
+        #   obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        #batch = obs.shape[0]
+        #logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
+        #return logits, state
+        return self.fcnn(obs)
+
+
+# different to tianshou, this network has activation functions in the last layer such that 
+# the constraints |mu| <= 1, 0<=sigma<=1 are satisfyed automatically
+class MyFCNNActorProb(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular"):
+        super(MyFCNNActorProb, self).__init__()
+        self.device = device
+        
+        ### Convolutional section
+        self.fcnn = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True,padding_mode=padding_mode),
+            nn.Tanh(),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.Tanh(),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.Tanh(),
+        )
+
+        self.mu = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.Tanh()
+        )
+        self.sigma = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.Softplus(threshold=1)
+        )
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Initialize the weights of the last layer of self.fcnn
+        with torch.no_grad():
+            #self.fcnn[4].weight *= 1/100
+            self.mu[0].weight *= 1/100
+            self.sigma[0].weight *= 1/100
+            self.sigma[0].bias.fill_(-0.9)
+        
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
+        mu = self.mu(logits)
+        sigma = self.sigma(logits)
+        mu, sigma = mu.reshape(batch,128,128), sigma.reshape(batch,128,128)
+        return (mu, sigma), state
+
+
+
+class MyFcnnActor(nn.Module):
+
+    def __init__(self, backbone, device="cpu", in_channels=1, feature_dim=1, out_channels=1, padding_mode="circular"):
+        super(MyFcnnActor, self).__init__()
+        self.device = device
+        self.backbone = backbone
+
+        self.mu = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.Tanh()
+        )
+        self.sigma = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.Sigmoid()
+        )
+        #initialize bias to quarantee that the network starts with max standard deviation
+        #TODO: maybe torch.no_grad disables changing of beta at all times -> check this
+        #with torch.no_grad():
+        #   self.sigma[0].bias.fill_(0.1)
+        #print(f"bias is initialized to {self.sigma[0].bias}")
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.backbone(obs.reshape(batch, 1, 128, 128))
+        mu = self.mu(logits).reshape(batch,128,128)
+        sigma = self.sigma(logits).reshape(batch,128,128)
+    
+        return (mu, sigma), state
+
+
+class MyCritc(nn.Module):
+
+    def __init__(self, backbone, device="cpu", in_features=16384, out_features=1):
+        super(MyCritc, self).__init__()
+        self.device = device
+        self.backbone = backbone
+
+        self.linear = nn.Sequential(
+            nn.Linear(in_features, out_features),
+            nn.ReLU(True),
+        )
+
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.backbone(obs.reshape(batch, 1, 128, 128))
+        obs = obs.reshape(batch, -1)
+        print("logits shape: ", logits.shape)
+        adv = self.linear(logits.reshape(batch, -1))
+        print("adv shape: ", adv.shape)
+        adv = adv.reshape(batch)
+        print(adv)
+    
+        return adv, state
+
+
+class FcNN_flattend(nn.Module):
+
+    def __init__(self, in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular", device="cpu"):
+        super(FcNN_flattend, self).__init__()
+        self.device = device
+        
+        ### Convolutional section
+        self.fcnn = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True,padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+        )
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            print("reshaping")
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+        logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
+        logits = logits.reshape(batch, -1)
+        print("logits shape: ", logits.shape)
+        return logits, state
+
+
+class Backbone(nn.Module):
+
+    def __init__(self, out_size=64, device="cpu"):
+        super(Backbone, self).__init__()
+        
+        ### Convolutional section
+        self.encoder_cnn = nn.Sequential(
+            nn.Conv2d(1, 2, 3, stride=2, padding=1),
+            nn.Tanh(),
+            nn.Conv2d(2, 4, 3, stride=2, padding=1),
+            nn.Tanh(),
+            nn.Conv2d(4, 8, 3, stride=2, padding=1),
+            nn.Tanh(),
+            nn.MaxPool2d(2,2)
+        )
+        
+        ### Linear section
+        self.encoder_lin = nn.Sequential(
+            nn.Linear(512, out_size),
+            nn.Tanh(),
+        )
+
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=device)
+        batch = obs.shape[0]
+
+        obs = self.encoder_cnn(obs.reshape(batch, 1, 128, 128))
+        obs = obs.reshape(batch, -1)
+        logits = self.encoder_lin(obs)
+
+        return logits, state
+
+
+
+class FcNN_to_critic_converter(nn.Module):
+
+    def __init__(self, fcnn_backbone, device="cpu"):
+        super().__init__()
+        self.device = device
+        self.fcnn_backbone = fcnn_backbone
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+        logits = self.fcnn_backbone(obs.reshape(batch, 1, 128, 128))
+        logits = logits.reshape(batch, -1)
+        return logits, state
