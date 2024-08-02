@@ -85,8 +85,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--step_per_epoch", type=int, default=100)
     parser.add_argument("--repeat_per_collect", type=int, default=3)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--step_per_collect", type=int, default=100)
+    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--step_per_collect", type=int, default=64)
     parser.add_argument("--episode_per_collect", type=int, default=1)
     parser.add_argument("--reward_threshold", type=int, default=100.9)
 
@@ -164,7 +164,7 @@ if __name__ == '__main__':
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
-    logger = WandbLogger2(config=args, train_interval=1, update_interval=1,
+    logger = WandbLogger2(config=args, train_interval=100, update_interval=100,
                              test_interval=1, info_interval=1)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
@@ -183,7 +183,7 @@ if __name__ == '__main__':
         episode_per_test=args.episode_per_test,
         batch_size=args.batch_size,
         step_per_collect=args.step_per_collect,
-        #episode_per_collect=1,
+        #episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
         stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
@@ -192,6 +192,6 @@ if __name__ == '__main__':
 
     #save policy
     #TODO: save policy under a unique name
-    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_67.pth")
+    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_70.pth")
 
  
