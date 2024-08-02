@@ -57,7 +57,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--step_factor", type=int, default=2)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=1)
-    parser.add_argument("--max_interactions", dype=int, default=100)
+    parser.add_argument("--max_interactions", type=int, default=100)
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
 
@@ -69,9 +69,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coeff", type=float, default=-0.01)
+    parser.add_argument("--ent_coef", type=float, default=-0.01)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
-    parser.add_argument("gae_lambda", dype=float, default=0.9) 
+    parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
     #COLLECTOR ARGUMENTS
     parser.add_argument("--buffer_size", type=int, default=20000)
@@ -122,8 +122,8 @@ if __name__ == '__main__':
     kwargs2, T2,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=args.fgs_resolution) #fgs
     assert (T2%T1 == 0) # checks if cgs time is a factor of fgs time
     env = create_env(kwargs1, kwargs2, step_factor=args.step_factor,  max_t=args.max_interactions)
-    train_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, step_factor=step_factor, max_t=args.max_interactions) for _ in range(args.train_num)])
-    test_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, step_factor=step_factor, max_t=args.max_interactions) for _ in range(args.test_num)])
+    train_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, step_factor=args.step_factor, max_t=args.max_interactions) for _ in range(args.train_num)])
+    test_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, step_factor=args.step_factor, max_t=args.max_interactions) for _ in range(args.test_num)])
     #check_env(env)
 
     #######################################################################################################
