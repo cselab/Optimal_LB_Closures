@@ -117,11 +117,21 @@ if __name__ == '__main__':
     actor = MyFCNNActorProb(device=device).to(device)
     critic_backbone = Backbone(device=device).to(device)
     critic = Critic(preprocess_net=critic_backbone, preprocess_net_output_dim=64, device=device).to(device)
-    optim = torch.optim.AdamW(actor.parameters(), lr=0.001)
+    optim = torch.optim.Adam(actor.parameters(), lr=3e-4, eps=1e-7)
     dist = torch.distributions.Normal
-    policy = A2CPolicy(actor=actor, critic=critic, optim=optim, dist_fn=dist, action_space=env.action_space,
-        discount_factor=0.97,reward_normalization=False, deterministic_eval=True, action_scaling=True,
-        ent_coef = 0.25, action_bound_method="tanh",
+    policy = A2CPolicy(actor=actor,
+        critic=critic, 
+        optim=optim,
+        dist_fn=dist, 
+        action_space=env.action_space,
+        discount_factor=0.99,
+        reward_normalization=True, 
+        deterministic_eval=True,
+        action_scaling=True,
+        ent_coef = -0.1,
+        action_bound_method="tanh",
+        max_grad_norm = 0.5,
+        gae_lambda=0.9, 
     )
 
 
@@ -146,10 +156,10 @@ if __name__ == '__main__':
         test_collector=test_collector,
         max_epoch=args.max_epoch,
         step_per_epoch=100,
-        repeat_per_collect=1,
+        repeat_per_collect=3,
         episode_per_test=1,
         batch_size=16,
-        step_per_collect=32,
+        step_per_collect=64,
         #episode_per_collect=1,
         show_progress=True,
         logger=logger,
@@ -160,7 +170,7 @@ if __name__ == '__main__':
 
 
     #save policy
-    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_6.pth")
+    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_65.pth")
     print("run is finished")
 
  

@@ -63,7 +63,7 @@ class MyFCNNActorProb(nn.Module):
         )
         self.sigma = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
                          bias=True, padding_mode=padding_mode),
-                         nn.Softplus()
+                         nn.Softplus(threshold=1)
         )
 
         self._initialize_weights()
