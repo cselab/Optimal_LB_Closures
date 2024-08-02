@@ -51,22 +51,44 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", type=str, default="CartPole-v1")
-    parser.add_argument("--model", type=str, default="ppo")
-    parser.add_argument("--reward_threshold", type=int, default=100)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--buffer_size", type=int, default=20000)
-    parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=100)
+
+    #ENVIRONMENT ARGUMENTS 
+    parser.add_argument("--step_factor", type=int, default=2)
+    parser.add_argument("--cgs_resolution", type=int, default=1)    
+    parser.add_argument("--fgs_resolution", type=int, default=1)
+    parser.add_argument("--max_interactions", dype=int, default=100)
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
+
+    #POLICY ARGUMENTS 
+    parser.add_argument("--learning_rate", type=float, default=3e-4)
+    parser.add_argument("--adam_eps", type=float, default=1e-7)
+    parser.add_argument("--gamma", type=float, default=0.99)
+    parser.add_argument("--reward_normalization", type=bool, default=True) 
+    parser.add_argument("--deterministic_eval", type=bool, default=True)
+    parser.add_argument("--action_scaling", type=bool, default=True)
+    parser.add_argument("--action_bound_method", type=str, default="tanh")
+    parser.add_argument("--ent_coeff", type=float, default=-0.01)
+    parser.add_argument("--max_grad_norm", type=float, default=0.5)
+    parser.add_argument("gae_lambda", dype=float, default=0.9) 
+
+    #COLLECTOR ARGUMENTS
+    parser.add_argument("--buffer_size", type=int, default=20000)
+
+    #LOGGER ARGUMENTS
     parser.add_argument("--logdir", type=str, default="log")
-    parser.add_argument("--gamma", type=float, default=0.90)
-    parser.add_argument("--lr", help='learning rate', type=float, default=1e-4)
-    parser.add_argument("--repeat_per_collect", type=int, default=1)
+    parser.add_argument("--task", type=str, default="local-omega-learning")
+    
+    #TRAINER ARGUMENTS
+    parser.add_argument("--max_epoch", type=int, default=10)
+    parser.add_argument("--step_per_epoch", type=int, default=100)
+    parser.add_argument("--repeat_per_collect", type=int, default=3)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--step_per_collect", type=int, default=200)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--step_per_collect", type=int, default=100)
+    parser.add_argument("--episode_per_collect", type=int, default=1)
+    parser.add_argument("--reward_threshold", type=int, default=100.9)
 
     return parser.parse_known_args()[0]
 
@@ -88,89 +110,88 @@ if __name__ == '__main__':
     ####### setup stuff *##################################################################################
     #######################################################################################################
     args = get_args()
-    # seed
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-
-    #restrict_to_num_threads(1)
 
     #######################################################################################################
     ####### environments ##################################################################################
     #######################################################################################################
     u0_path = "/home/pfischer/XLB/vel_init/velocity_burn_in_1806594.npy" #4096x4096 simulation
     rho0_path = "/home/pfischer/XLB/vel_init/density_burn_in_1806594.npy" #4096x4096 simulation
-    kwargs1, T1,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #cgs 
-    kwargs2, T2,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #fgs
-    step_factor=2
-    #check if cgs time is a factor of fgs time
-    assert (T2%T1 == 0)
-    env = create_env(kwargs1, kwargs2, step_factor=step_factor,  max_t=100)
-    train_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, step_factor=step_factor, max_t=100) for _ in range(args.train_num)])
-    test_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, step_factor=step_factor, max_t=100) for _ in range(args.test_num)])
+    kwargs1, T1,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=args.cgs_resolution) #cgs 
+    kwargs2, T2,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=args.fgs_resolution) #fgs
+    assert (T2%T1 == 0) # checks if cgs time is a factor of fgs time
+    env = create_env(kwargs1, kwargs2, step_factor=args.step_factor,  max_t=args.max_interactions)
+    train_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, step_factor=step_factor, max_t=args.max_interactions) for _ in range(args.train_num)])
+    test_env = DummyVectorEnv([lambda: create_env(kwargs1, kwargs2, step_factor=step_factor, max_t=args.max_interactions) for _ in range(args.test_num)])
     #check_env(env)
 
-    #Policy
+    #######################################################################################################
+    ####### Policy ########################################################################################
+    #######################################################################################################
     assert env.observation_space.shape is not None  # for mypy
     assert env.action_space.shape is not None
-
-    #try to run PPO
+    #initialize PPO
     actor = MyFCNNActorProb(device=device).to(device)
     critic_backbone = Backbone(device=device).to(device)
     critic = Critic(preprocess_net=critic_backbone, preprocess_net_output_dim=64, device=device).to(device)
-    optim = torch.optim.Adam(actor.parameters(), lr=3e-4, eps=1e-7)
+    optim = torch.optim.Adam(actor.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
     policy = PPOPolicy(actor=actor,
         critic=critic, 
         optim=optim,
         dist_fn=dist, 
         action_space=env.action_space,
-        discount_factor=0.99,
-        reward_normalization=True, 
-        deterministic_eval=True,
-        action_scaling=True,
-        ent_coef = -0.1,
-        action_bound_method="tanh",
-        max_grad_norm = 0.5,
-        gae_lambda=0.9, 
+        discount_factor=args.gamma,
+        reward_normalization=args.reward_normalization, 
+        deterministic_eval=args.deterministic_eval,
+        action_scaling=args.action_scaling,
+        action_bound_method=args.action_bound_method,
+        ent_coef = args.ent_coef,
+        max_grad_norm = args.max_grad_norm,
+        gae_lambda=args.gae_lambda, 
     )
 
-
-
-    #Collectors
+    #######################################################################################################
+    ####### Collectors ####################################################################################
+    #######################################################################################################
     train_collector = Collector(policy=policy, env=train_env, buffer=VectorReplayBuffer(args.buffer_size, len(train_env)))
     test_collector = Collector(policy=policy, env=test_env)
     train_collector.reset()
     test_collector.reset()
 
-    #wandb Logger
-    log_path = os.path.join(args.logdir, args.task, "pg")
-    logger = WandbLogger2(config=args, train_interval=100, update_interval=100)
+    #######################################################################################################
+    ####### Logger ########################################################################################
+    #######################################################################################################
+    log_path = os.path.join(args.logdir, args.task, "ppo")
+    logger = WandbLogger2(config=args, train_interval=1, update_interval=1,
+                             test_interval=1, info_interval=1)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
     logger.load(writer)
 
-    #Trainer
+    #######################################################################################################
+    ####### Trainer #######################################################################################
+    #######################################################################################################
     trainer = OnpolicyTrainer(
         policy=policy,
         train_collector=train_collector,
         test_collector=test_collector,
         max_epoch=args.max_epoch,
-        step_per_epoch=100,
-        repeat_per_collect=3,
-        episode_per_test=1,
-        batch_size=16,
-        step_per_collect=64,
+        step_per_epoch=args.step_per_epoch,
+        repeat_per_collect=args.repeat_per_collect,
+        episode_per_test=args.episode_per_test,
+        batch_size=args.batch_size,
+        step_per_collect=args.step_per_collect,
         #episode_per_collect=1,
         show_progress=True,
         logger=logger,
-        #stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
+        stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
     )
-
     result = trainer.run()
 
-
     #save policy
-    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_65.pth")
-    print("run is finished")
+    #TODO: save policy under a unique name
+    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_67.pth")
 
  
