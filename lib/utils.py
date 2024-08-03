@@ -4,6 +4,7 @@ import argparse
 from abc import ABC, abstractmethod
 from datetime import datetime
 import wandb
+import pickle
 import os
 
 
@@ -77,6 +78,11 @@ def save_dict_to_file(dict_obj, filename):
             f.write(f'{key}: {value}\n')
 
 
+def save_batch_to_file(batch_obj, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(batch_obj, f)
+
+
 def log_img_to_wandb(img: torch.Tensor,
                      input: torch.Tensor,
                      output: torch.Tensor,
@@ -132,4 +138,14 @@ def restrict_to_num_threads(num_threads: int):
     os.environ["MKL_NUM_THREADS"] = str(num_threads)
     # Also consider limiting the number of threads PyTorch can use internally for its operations
     torch.set_num_threads(num_threads)
+
+
+def model_name(config):
+    # creates a name from the relevant hyperparameters
+    setup_name = f"{config.environment}_{config.algorithm}_cgs{config.cgs_resolution}_fgs{config.fgs_resolution}"
+    if not os.path.exists("dump/"+setup_name):
+        os.makedirs("dump/"+setup_name)
+
+    return "dump/"+setup_name
+    
 

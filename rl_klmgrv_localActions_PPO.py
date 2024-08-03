@@ -9,6 +9,7 @@ from functools import partial
 import sys
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import pickle
  
 from tianshou.utils import WandbLogger
 from tianshou.data import Batch, Collector, ReplayBuffer, VectorReplayBuffer
@@ -30,7 +31,7 @@ from lib.environments.kolmogorov import KolmogorovEnvironment, KolmogorovEnviron
 from lib.policy import get_rl_algo
 from lib.distributions import ElementwiseNormal
 from lib.models import get_actor_critic
-from lib.utils import str2bool, Config, dict_to_wandb_table, restrict_to_num_threads
+from lib.utils import restrict_to_num_threads, save_batch_to_file, save_dict_to_file, model_name
 from lib.trainer import MyOnpolicyTrainer
 from lib.models import *
 from lib.custom_tianshou.my_logger import WandbLogger2
@@ -51,6 +52,10 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--algorithm", type=str, default="ppo")
+    parser.add_argument("--environment", type=str, default="kolmogorov")
+
     parser.add_argument("--seed", type=int, default=0)
 
     #ENVIRONMENT ARGUMENTS 
@@ -69,7 +74,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=-0.01)
+    parser.add_argument("--ent_coef", type=float, default=1e-3)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
@@ -85,8 +90,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--step_per_epoch", type=int, default=100)
     parser.add_argument("--repeat_per_collect", type=int, default=3)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--step_per_collect", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
     parser.add_argument("--reward_threshold", type=int, default=100.9)
 
@@ -112,6 +117,9 @@ if __name__ == '__main__':
     args = get_args()
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+    dump_dir = model_name(args)
+
+    
 
     #######################################################################################################
     ####### environments ##################################################################################
@@ -182,16 +190,34 @@ if __name__ == '__main__':
         repeat_per_collect=args.repeat_per_collect,
         episode_per_test=args.episode_per_test,
         batch_size=args.batch_size,
-        step_per_collect=args.step_per_collect,
-        #episode_per_collect=args.episode_per_collect,
+        #step_per_collect=args.step_per_collect,
+        episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
         stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
     )
-    result = trainer.run()
+    
+    #######################################################################################################
+    #######  run training  ################################################################################
+    #######################################################################################################
+    epoch_results = []
+    for _,epoch_stats,_ in trainer:
+        epoch_results.append(Batch(epoch_stats))
+ 
+    # stack totoal results
+    total_results = Batch.stack(epoch_results)
+
+    #save total results
+    total_results_fname = dump_dir + '/training_stats.pkl'
+    save_batch_to_file(total_results, total_results_fname)
+
+    #save config file
+    config_fname = dump_dir + '/config.pkl'
+    save_batch_to_file(args, config_fname)
 
     #save policy
     #TODO: save policy under a unique name
-    torch.save(policy.state_dict(), "dump/GlobOmegLocAct_70.pth")
+    policy_fname = dump_dir + '/policy.pth'
+    torch.save(policy.state_dict(), policy_fname)
 
  

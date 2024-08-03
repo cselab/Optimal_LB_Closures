@@ -121,7 +121,8 @@ class WandbLogger2(BaseLogger):
                 "writing data. Try `logger.load(SummaryWriter(log_path))`",
             )
         self.tensorboard_logger.write(step_type, step, data)
-        wandb.log(data, step=step)
+        #wandb.log(data, step=step)
+        wandb.log(data)
 
 
     def log_info_data(self, log_data: dict, step: int) -> None:
