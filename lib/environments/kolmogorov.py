@@ -671,7 +671,7 @@ class KolmogorovEnvironment5(BaseEnvironment, ABC):
         #other stuff  
         self.factor = int(self.fgs.downsamplingFactor/self.cgs.downsamplingFactor)
         self.counter = 0
-        self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny,2), dtype=np.float64)
         self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
         self.step_factor = step_factor
         self.max_episode_steps= int(step_factor*max_episode_steps)
@@ -711,10 +711,7 @@ class KolmogorovEnvironment5(BaseEnvironment, ABC):
             #print(f"action={action}; omega={self.cgs.omega}")
             action = np.clip(action, self.action_space.low, self.action_space.high)
 
-
-
         self.cgs.omega = np.copy(self.omg * action.reshape(self.omg.shape))
-        
         for i in range(self.step_factor):
             self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
             for j in range(self.factor):
@@ -725,9 +722,9 @@ class KolmogorovEnvironment5(BaseEnvironment, ABC):
         self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
         self.rho2, self.u2 = get_velocity(self.f2, self.fgs)
 
-        reward = ((self.u1 - self.u2)**2).mean() #mean squared error between velocity field of cgs and fgs
+        reward = - ((self.u1 - self.u2)**2).mean() #mean squared error between velocity field of cgs and fgs
         #terminated = bool(corr<0.97)
-        terminated = False
+        terminated = bool(reward < -0.01)
         truncated = bool(self.counter>self.max_episode_steps)
         
         #compute energy spectrum of cgs

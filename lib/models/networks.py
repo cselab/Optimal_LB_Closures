@@ -82,7 +82,7 @@ class MyFCNNActorProb(nn.Module):
             obs = torch.tensor(obs, dtype=torch.float, device=self.device)
         batch = obs.shape[0]
 
-        logits = self.fcnn(obs.reshape(batch, 1, 128, 128))
+        logits = self.fcnn(obs.reshape(batch, -1, 128, 128))
         mu = self.mu(logits)
         sigma = self.sigma(logits)
         mu, sigma = mu.reshape(batch,128,128), sigma.reshape(batch,128,128)
@@ -184,12 +184,12 @@ class FcNN_flattend(nn.Module):
 
 class Backbone(nn.Module):
 
-    def __init__(self, out_size=64, device="cpu"):
+    def __init__(self, in_channels=1, out_size=64, device="cpu"):
         super(Backbone, self).__init__()
         
         ### Convolutional section
         self.encoder_cnn = nn.Sequential(
-            nn.Conv2d(1, 2, 3, stride=2, padding=1),
+            nn.Conv2d(in_channels, 2, 3, stride=2, padding=1),
             nn.Tanh(),
             nn.Conv2d(2, 4, 3, stride=2, padding=1),
             nn.Tanh(),
@@ -209,7 +209,7 @@ class Backbone(nn.Module):
             obs = torch.tensor(obs, dtype=torch.float, device=device)
         batch = obs.shape[0]
 
-        obs = self.encoder_cnn(obs.reshape(batch, 1, 128, 128))
+        obs = self.encoder_cnn(obs.reshape(batch, -1, 128, 128))
         obs = obs.reshape(batch, -1)
         logits = self.encoder_lin(obs)
 
