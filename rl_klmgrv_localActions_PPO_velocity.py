@@ -91,7 +91,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
-    parser.add_argument("--reward_threshold", type=int, default=-1e-4)
+    parser.add_argument("--reward_threshold", type=int, default=-5e-4)
 
     return parser.parse_known_args()[0]
 
