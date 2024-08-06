@@ -777,6 +777,7 @@ class KolmogorovEnvironment6(BaseEnvironment, ABC):
         #          99, 359, 151, 130, 149, 308, 257, 343, 413, 293, 385, 191, 276,
         #          160, 313, 21, 252, 235, 344])
         self.possible_seeds = np.array([102])
+        #self.possible_seeds = seeds #add seeds as argument
         
         self.sampled_seed = np.random.choice(self.possible_seeds) 
         u0_path = f"/home/pfischer/XLB/vel_init/velocity_burn_in_2_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
