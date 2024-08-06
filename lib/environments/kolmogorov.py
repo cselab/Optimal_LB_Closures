@@ -6,6 +6,7 @@ from tqdm import tqdm
 import wandb
 import sys
 import os
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import gymnasium as gym
 from gymnasium import spaces
@@ -769,7 +770,7 @@ class KolmogorovEnvironment5(BaseEnvironment, ABC):
 
 class KolmogorovEnvironment6(BaseEnvironment, ABC):
     
-    def __init__(self, kwargs1, kwargs2, step_factor=1, max_episode_steps=100, seed=102, fgs_lamb=16, cgs_lamb=1):
+    def __init__(self, step_factor=1, max_episode_steps=100, seed=102, fgs_lamb=16, cgs_lamb=1):
         super().__init__()
 
         #self.possible_seeds = np.array([102, 348, 270, 106, 71, 188, 20, 102, 121, 214, 330, 87, 372,
@@ -781,10 +782,11 @@ class KolmogorovEnvironment6(BaseEnvironment, ABC):
         u0_path = f"/home/pfischer/XLB/vel_init/velocity_burn_in_2_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = f"/home/pfischer/XLB/vel_init/density_burn_in_2_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         self.fgs_dump_path = f"/home/pfischer/XLB/re1000_T18_N2048_S{self.sampled_seed}_dump/"
-        self.kwargs1, endTime1, T1, N1 = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=cgs_lamb) #cgs is 128x128
+        self.kwargs1, endTime1, T1, N1 = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.4, lamb=cgs_lamb) #cgs is 128x128
+        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.4, lamb=fgs_lamb)
 
         #self.kwargs1 = kwargs1
-        self.cgs = Kolmogorov_flow(**kwargs1)
+        self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
         self.cgs.omg = np.copy(self.omg)
         self.f1 = self.cgs.assign_fields_sharded()
@@ -796,7 +798,7 @@ class KolmogorovEnvironment6(BaseEnvironment, ABC):
         self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny,2), dtype=np.float64)
         self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
         self.step_factor = step_factor
-        self.max_episode_steps= np.min(int(step_factor*max_episode_steps),endTime1)
+        self.max_episode_steps = np.min([step_factor*max_episode_steps,endTime1])
 
     def seed(self, seed):
         np.random.seed(seed)
@@ -849,24 +851,31 @@ class KolmogorovEnvironment6(BaseEnvironment, ABC):
         return self.u1, reward, terminated, truncated, {}
 
     def render(self):
-        v1 = vorticity_2d(self.u1, self.cgs.dx_eff)
-        v2 = vorticity_2d(self.u2, self.fgs.dx_eff)
+        v1 = vorticity_2d(self.u1, self.kwargs1["dx_eff"])
+        v2 = vorticity_2d(self.u2, self.kwargs2["dx_eff"])
         print("Correlation:", np.corrcoef(v1.flatten(), v2.flatten())[0, 1])
         print("MSE:", ((self.u1 - self.u2)**2).mean())
         print("NMSE:", ((self.u1 - self.u2)**2).sum()/((self.u2)**2).sum())
-        # plot v1 and v2 next to each other
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 5))
-        ax1.imshow(v1, vmin=-20, vmax=20, cmap=sn.cm.icefire)
-        ax2.imshow(v2, vmin=-20, vmax=20, cmap=sn.cm.icefire)
-        ax3.imshow((v1-v2)**2)
+
+        # Plot v1 and v2 next to each other
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+        im1 = ax1.imshow(v1, vmin=-20, vmax=20, cmap=sn.cm.icefire)
+        im2 = ax2.imshow(v2, vmin=-20, vmax=20, cmap=sn.cm.icefire)
+        im3 = ax3.imshow((v1 - v2)**2, vmin=0, vmax=1)
+
         ax1.axis('off')
         ax2.axis('off')
         ax3.axis('off')
+
         ax1.set_title("CGS")
         ax2.set_title("FGS")
         ax3.set_title("MSE")
-        #plot a common colorbar
-        #fig.colorbar(ax1.imshow(v1, cmap=sn.cm.icefire), ax=[ax1, ax2], orientation='vertical')
+
+        # Create a colorbar for the third plot
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im3, cax=cax)
+
         plt.show()
 
     def get_spectra(self):
