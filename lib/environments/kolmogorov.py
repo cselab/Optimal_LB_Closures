@@ -890,7 +890,9 @@ class KolmogorovEnvironment6(BaseEnvironment, ABC):
     def _load_u2(self):
         u2 = np.load(self.fgs_dump_path + f"velocity_klmgrv_2_s{self.sampled_seed}_{str(int(self.counter*self.factor)).zfill(6)}.npy")
         return u2
-
+    
+    def get_vorticity(self):
+        return vorticity_2d(self.u1, self.kwargs1["dx_eff"])
 
 def main():
     #here a trivial run of the environment is displayed
