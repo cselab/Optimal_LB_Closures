@@ -770,21 +770,21 @@ class KolmogorovEnvironment5(BaseEnvironment, ABC):
 
 class KolmogorovEnvironment6(BaseEnvironment, ABC):
     
-    def __init__(self, step_factor=1, max_episode_steps=100, seed=102, fgs_lamb=16, cgs_lamb=1):
+    def __init__(self, step_factor=1, max_episode_steps=100, seed=102, fgs_lamb=16, cgs_lamb=1, seeds=np.array([102])):
         super().__init__()
 
         #self.possible_seeds = np.array([102, 348, 270, 106, 71, 188, 20, 102, 121, 214, 330, 87, 372,
         #          99, 359, 151, 130, 149, 308, 257, 343, 413, 293, 385, 191, 276,
         #          160, 313, 21, 252, 235, 344])
-        self.possible_seeds = np.array([102])
-        #self.possible_seeds = seeds #add seeds as argument
+        #self.possible_seeds = np.array([102])
+        self.possible_seeds = seeds #add seeds as argument
         
         self.sampled_seed = np.random.choice(self.possible_seeds) 
         u0_path = f"/home/pfischer/XLB/vel_init/velocity_burn_in_2_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = f"/home/pfischer/XLB/vel_init/density_burn_in_2_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         self.fgs_dump_path = f"/home/pfischer/XLB/re1000_T18_N2048_S{self.sampled_seed}_dump/"
-        self.kwargs1, endTime1, T1, N1 = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.4, lamb=cgs_lamb) #cgs is 128x128
-        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.4, lamb=fgs_lamb)
+        self.kwargs1, endTime1, T1, N1 = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.0518725402644398, lamb=cgs_lamb) #cgs is 128x128
+        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.0518725402644398, lamb=fgs_lamb)
 
         #self.kwargs1 = kwargs1
         self.cgs = Kolmogorov_flow(**self.kwargs1)
@@ -793,6 +793,7 @@ class KolmogorovEnvironment6(BaseEnvironment, ABC):
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
         
+        
         #other stuff  
         self.factor = int(fgs_lamb/cgs_lamb)
         self.counter = 0
@@ -800,6 +801,8 @@ class KolmogorovEnvironment6(BaseEnvironment, ABC):
         self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
         self.step_factor = step_factor
         self.max_episode_steps = np.min([step_factor*max_episode_steps,endTime1])
+
+        self.u2 = self._load_u2()
 
     def seed(self, seed):
         np.random.seed(seed)
