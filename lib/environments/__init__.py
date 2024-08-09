@@ -1,2 +1,1 @@
-from lib.environments.kolmogorov import KolmogorovEnvironment4, KolmogorovEnvironment5, KolmogorovEnvironment6
-
+from lib.environments.kolmogorov import *
