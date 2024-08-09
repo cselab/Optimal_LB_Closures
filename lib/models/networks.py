@@ -87,6 +87,44 @@ class MyFCNNActorProb(nn.Module):
         sigma = self.sigma(logits)
         mu, sigma = mu.reshape(batch,128,128), sigma.reshape(batch,128,128)
         return (mu, sigma), state
+    
+
+
+# different to tianshou, this network has activation functions in the last layer such that 
+# the constraints |mu| <= 1, 0<=sigma<=1 are satisfyed automatically
+class MyFCNNCriticProb(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular"):
+        super(MyFCNNCriticProb, self).__init__()
+        self.device = device
+        
+        ### Convolutional section
+        self.fcnn = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True,padding_mode=padding_mode),
+            nn.Tanh(),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.Tanh(),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+            nn.Tanh(),
+        )
+
+        self.value = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.Tanh()
+        )
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.fcnn(obs.reshape(batch, -1, 128, 128))
+        values = self.value(logits)
+        values = values.reshape(batch,128,128)
+        return values
 
 
 

@@ -4,33 +4,17 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import os
-import json
-from functools import partial
 import sys
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-import pickle
 from time import strftime
  
-from tianshou.utils import WandbLogger
 from tianshou.data import Batch, Collector, ReplayBuffer, VectorReplayBuffer
 from tianshou.env import DummyVectorEnv
-from tianshou.policy import BasePolicy, PPOPolicy, PGPolicy, A2CPolicy
 from tianshou.trainer import OnpolicyTrainer
-from tianshou.utils.net.common import ActorCritic, Net
-from tianshou.utils.net.continuous import Actor, Critic, ActorProb
-from tianshou.trainer.utils import gather_info, test_episode
-
-import gymnasium as gym
-from gymnasium import spaces
-from gymnasium.wrappers import TimeLimit, RescaleAction, TransformObservation
-from stable_baselines3.common.env_checker import check_env
 
 from lib.environments import *
-from lib.policy import get_rl_algo
+from lib.policy import MarlPPOPolicy
 from lib.distributions import ElementwiseNormal
-from lib.models import get_actor_critic
-from lib.utils import restrict_to_num_threads, save_batch_to_file, save_dict_to_file, model_name
+from lib.utils import save_batch_to_file, model_name
 from lib.trainer import MyOnpolicyTrainer
 from lib.models import *
 from lib.custom_tianshou.my_logger import WandbLogger2
@@ -66,15 +50,15 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--test_num", type=int, default=1)
 
     #POLICY ARGUMENTS 
-    parser.add_argument("--learning_rate", type=float, default=3e-5)
+    parser.add_argument("--learning_rate", type=float, default=1e-5)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
-    parser.add_argument("--gamma", type=float, default=1.)
-    parser.add_argument("--reward_normalization", type=bool, default=True)
+    parser.add_argument("--gamma", type=float, default=0.998)
+    parser.add_argument("--reward_normalization", type=bool, default=True) 
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=-1e-4)
-    parser.add_argument("--max_grad_norm", type=float, default=1.)
+    parser.add_argument("--ent_coef", type=float, default=-1e-5)
+    parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
     #COLLECTOR ARGUMENTS
@@ -90,7 +74,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--repeat_per_collect", type=int, default=3)
     parser.add_argument("--episode_per_test", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--step_per_collect", type=int, default=200)
+    parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
     parser.add_argument("--reward_threshold", type=int, default=-5e-4)
 
@@ -123,8 +107,8 @@ if __name__ == '__main__':
     val_seeds = seeds[30:]
     #test_seeds = np.array([69, 33, 420])
     
-    train_env = KolmogorovEnvironment7(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
-    test_env = KolmogorovEnvironment7(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    train_env = KolmogorovEnvironment8(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    test_env = KolmogorovEnvironment8(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
     #######################################################################################################
     ####### Policy ########################################################################################
     #######################################################################################################
@@ -132,11 +116,11 @@ if __name__ == '__main__':
     assert train_env.action_space.shape is not None
     #initialize PPO
     actor = MyFCNNActorProb(in_channels=2, device=device).to(device)
-    critic_backbone = Backbone(in_channels=2, device=device).to(device)
-    critic = Critic(preprocess_net=critic_backbone, preprocess_net_output_dim=64, device=device).to(device)
+    critic = MyFCNNCriticProb(in_channels=2, device=device).to(device)
     optim = torch.optim.Adam(actor.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
-    policy = PPOPolicy(actor=actor,
+
+    policy = MarlPPOPolicy(actor=actor,
         critic=critic, 
         optim=optim,
         dist_fn=dist, 
@@ -182,8 +166,8 @@ if __name__ == '__main__':
         repeat_per_collect=args.repeat_per_collect,
         episode_per_test=args.episode_per_test,
         batch_size=args.batch_size,
-        step_per_collect=args.step_per_collect,
-        #episode_per_collect=args.episode_per_collect,
+        #step_per_collect=args.step_per_collect,
+        episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
         #stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
