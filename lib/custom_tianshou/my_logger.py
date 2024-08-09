@@ -74,7 +74,7 @@ class WandbLogger2(BaseLogger):
         self.write_flush = write_flush
         self.restored = False
         if project is None:
-            project = os.getenv("WANDB_PROJECT", "tianshou")
+            project = os.getenv("WANDB_PROJECT", "real-deal")
 
         self.wandb_run = (
             wandb.init(
@@ -121,7 +121,8 @@ class WandbLogger2(BaseLogger):
                 "writing data. Try `logger.load(SummaryWriter(log_path))`",
             )
         self.tensorboard_logger.write(step_type, step, data)
-        wandb.log(data, step=step)
+        #wandb.log(data, step=step)
+        wandb.log(data)
 
 
     def log_info_data(self, log_data: dict, step: int) -> None:

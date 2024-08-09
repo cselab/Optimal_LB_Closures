@@ -6,6 +6,9 @@ from tqdm import tqdm
 import wandb
 import sys
 import os
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import torch
+import gc
 
 import gymnasium as gym
 from gymnasium import spaces
@@ -671,7 +674,7 @@ class KolmogorovEnvironment5(BaseEnvironment, ABC):
         #other stuff  
         self.factor = int(self.fgs.downsamplingFactor/self.cgs.downsamplingFactor)
         self.counter = 0
-        self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny,2), dtype=np.float64)
         self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
         self.step_factor = step_factor
         self.max_episode_steps= int(step_factor*max_episode_steps)
@@ -711,10 +714,7 @@ class KolmogorovEnvironment5(BaseEnvironment, ABC):
             #print(f"action={action}; omega={self.cgs.omega}")
             action = np.clip(action, self.action_space.low, self.action_space.high)
 
-
-
         self.cgs.omega = np.copy(self.omg * action.reshape(self.omg.shape))
-        
         for i in range(self.step_factor):
             self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
             for j in range(self.factor):
@@ -725,9 +725,9 @@ class KolmogorovEnvironment5(BaseEnvironment, ABC):
         self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
         self.rho2, self.u2 = get_velocity(self.f2, self.fgs)
 
-        reward = ((self.u1 - self.u2)**2).mean() #mean squared error between velocity field of cgs and fgs
+        reward = - ((self.u1 - self.u2)**2).mean() #mean squared error between velocity field of cgs and fgs
         #terminated = bool(corr<0.97)
-        terminated = False
+        terminated = bool(reward < -0.01)
         truncated = bool(self.counter>self.max_episode_steps)
         
         #compute energy spectrum of cgs
@@ -763,6 +763,293 @@ class KolmogorovEnvironment5(BaseEnvironment, ABC):
         _, E1 = energy_spectrum_2d(self.u1)
         _, E2 = energy_spectrum_2d(self.u2)
         return E1, E2
+    
+
+
+
+# 6th environemnt. Change usage a bit to load velocity field of fgs from file
+# also allow for multiple initializations from different burn ins depending on a seed argument 
+
+# path to the initialization files
+INIT_PATH = "/home/pfischer/XLB/vel_init/"
+FGS_DATA_PATH = "/home/pfischer/XLB/fgs_data/"
+
+class KolmogorovEnvironment6(BaseEnvironment, ABC):
+    
+    def __init__(self, step_factor=1, max_episode_steps=100, seed=102, fgs_lamb=16, cgs_lamb=1, seeds=np.array([102])):
+        super().__init__()
+
+        self.possible_seeds = seeds #add seeds as argument
+        self.sampled_seed = np.random.choice(self.possible_seeds) 
+        u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
+        rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
+        self.fgs_dump_path = FGS_DATA_PATH + f"re1000_T18_N2048_S{self.sampled_seed}_dump/"
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.06, lamb=cgs_lamb) #cgs is 128x128
+        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.06, lamb=fgs_lamb)
+
+        #CGS
+        self.cgs = Kolmogorov_flow(**self.kwargs1)
+        self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
+        self.cgs.omg = np.copy(self.omg)
+        self.f1 = self.cgs.assign_fields_sharded()
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+        
+        #other stuff  
+        self.factor = int(fgs_lamb/cgs_lamb)
+        self.counter = 0
+        self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny,2), dtype=np.float64)
+        self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
+        self.step_factor = step_factor
+        self.max_episode_steps = np.min([max_episode_steps,endTime1])
+
+        #FGS
+        self.u2 = self._load_u2()
+
+    def seed(self, seed):
+        np.random.seed(seed)
+
+    def reset(self, seed=None, **kwargs):
+        super().reset(seed=seed, **kwargs)
+        self.counter = 0
+        self.sampled_seed = np.random.choice(self.possible_seeds) 
+        self.kwargs1["u0_path"] = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy"
+        self.kwargs1["rho0_path"] = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy"
+        self.fgs_dump_path = FGS_DATA_PATH + f"re1000_T18_N2048_S{self.sampled_seed}_dump/"
+        self.cgs = Kolmogorov_flow(**self.kwargs1)
+        self.cgs.omega = np.copy(self.omg)
+        self.f1 = self.cgs.assign_fields_sharded()
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+        self.u2 = self._load_u2()
+        return self.u1, {}
+    
+    def step(self, action):
+        # load in action and get rid of channel dimension
+        #action = action[0]
+        if action.shape != self.action_space.shape:
+            try:
+                action = action.reshape(self.action_space.shape)
+            except:
+                print("action reshaping didn't work")
+
+        if (np.any(self.action_space.low > action) or np.any(action > self.action_space.high)):
+            print("WARNING: Action is not in action space")
+            #print(f"action={action}; omega={self.cgs.omega}")
+            action = np.clip(action, self.action_space.low, self.action_space.high)
+
+        self.cgs.omega = np.copy(self.omg * action.reshape(self.omg.shape))
+
+        for i in range(self.step_factor):
+            self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
+            self.counter += 1
+
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+        self.u2 = self._load_u2()
+
+        reward = - ((self.u1 - self.u2)**2).mean() #mean squared error between velocity field of cgs and fgs
+        #terminated = bool(corr<0.97)
+        terminated = bool(reward < -0.01)
+        truncated = bool(self.counter>self.max_episode_steps)
+        
+        return self.u1, 1., terminated, truncated, {}
+
+    def render(self):
+        v1 = vorticity_2d(self.u1, self.kwargs1["dx_eff"])
+        v2 = vorticity_2d(self.u2, self.kwargs2["dx_eff"])
+        print("Correlation:", np.corrcoef(v1.flatten(), v2.flatten())[0, 1])
+        print("MSE:", ((self.u1 - self.u2)**2).mean())
+        print("NMSE:", ((self.u1 - self.u2)**2).sum()/((self.u2)**2).sum())
+        print("pointwise relative mse:", (((self.u1 - self.u2)**2)/((self.u2)**2)+1e-6).mean())
+        # Plot v1 and v2 next to each other
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+        im1 = ax1.imshow(v1, vmin=-20, vmax=20, cmap=sn.cm.icefire)
+        im2 = ax2.imshow(v2, vmin=-20, vmax=20, cmap=sn.cm.icefire)
+        im3 = ax3.imshow((v1 - v2)**2, vmin=0, vmax=1)
+        ax1.axis('off')
+        ax2.axis('off')
+        ax3.axis('off')
+        ax1.set_title("CGS")
+        ax2.set_title("FGS")
+        ax3.set_title("MSE")
+        # Create a colorbar for the third plot
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im3, cax=cax)
+        plt.show()
+
+    def get_spectra(self):
+        _, E1 = energy_spectrum_2d(self.u1)
+        _, E2 = energy_spectrum_2d(self.u2)
+        return E1, E2
+    
+    def _load_u2(self):
+        u2 = np.load(self.fgs_dump_path + f"velocity_klmgrv_s{self.sampled_seed}_{str(int(self.counter*self.factor)).zfill(6)}.npy")
+        return u2
+    
+    def get_vorticity(self):
+        return vorticity_2d(self.u1, self.kwargs1["dx_eff"])
+
+
+
+# change to a more informative advantage reward by checking if the action taken is better 
+# than a trivial action. Compare to yans reward
+class KolmogorovEnvironment7(BaseEnvironment, ABC):
+    
+    def __init__(self, step_factor=1, max_episode_steps=1535, seed=102, fgs_lamb=16, cgs_lamb=1, seeds=np.array([102])):
+        super().__init__()
+
+        self.possible_seeds = seeds #add seeds as argument
+        self.sampled_seed = np.random.choice(self.possible_seeds) 
+        u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
+        rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
+        self.fgs_dump_path = FGS_DATA_PATH + f"re1000_T18_N2048_S{self.sampled_seed}_dump/"
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.06, lamb=cgs_lamb) #cgs is 128x128
+        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, desired_time=1.06, lamb=fgs_lamb)
+
+        #CGS
+        self.cgs = Kolmogorov_flow(**self.kwargs1)
+        self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
+        self.cgs.omg = np.copy(self.omg)
+        self.f1 = self.cgs.assign_fields_sharded()
+        self.rho1, self.u1 = get_velocity(self.f1, self.cgs)
+        self.v1 = vorticity_2d(self.u1, self.kwargs1["dx_eff"])
+
+        #reference cgs
+        self.cgs_ref = Kolmogorov_flow(**self.kwargs1)
+        self.f1_ref = self.cgs_ref.assign_fields_sharded()
+        
+        #other stuff  
+        self.factor = int(fgs_lamb/cgs_lamb)
+        self.counter = 0
+        self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny,2), dtype=np.float64)
+        self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
+        self.step_factor = step_factor
+        self.max_episode_steps = np.min([max_episode_steps,endTime1])
+        self.trivial_action = np.ones((self.cgs.nx, self.cgs.ny))
+
+        #FGS
+        self.u2 = self._load_u2()
+        self.v2 = vorticity_2d(self.u2, self.kwargs2["dx_eff"])
+
+
+    def seed(self, seed):
+        np.random.seed(seed)
+
+    def reset(self, seed=None, **kwargs):
+        super().reset(seed=seed, **kwargs)
+        self.counter = 0
+        self.sampled_seed = np.random.choice(self.possible_seeds) 
+        self.kwargs1["u0_path"] = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy"
+        self.kwargs1["rho0_path"] = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy"
+        self.fgs_dump_path = FGS_DATA_PATH + f"re1000_T18_N2048_S{self.sampled_seed}_dump/"
+        self.cgs = Kolmogorov_flow(**self.kwargs1)
+        self.cgs.omega = np.copy(self.omg)
+        self.f1 = self.cgs.assign_fields_sharded()
+        _, self.u1 = get_velocity(self.f1, self.cgs)
+        self.u2 = self._load_u2()
+        self.v1 = vorticity_2d(self.u1, self.kwargs1["dx_eff"])
+        self.v2 = vorticity_2d(self.u2, self.kwargs2["dx_eff"])
+
+        self.cgs_ref = Kolmogorov_flow(**self.kwargs1)
+
+        return self.u1, {}
+    
+    def step(self, action):
+        # load in action and get rid of channel dimension
+        #action = action[0]
+        if action.shape != self.action_space.shape:
+            try:
+                action = action.reshape(self.action_space.shape)
+            except:
+                print("action reshaping didn't work")
+
+        if (np.any(self.action_space.low > action) or np.any(action > self.action_space.high)):
+            print("WARNING: Action is not in action space")
+            #print(f"action={action}; omega={self.cgs.omega}")
+            action = np.clip(action, self.action_space.low, self.action_space.high)
+
+        self.cgs.omega = np.copy(self.omg * action.reshape(self.omg.shape))
+        self.f1_ref = np.copy(self.f1)
+        for _ in range(self.step_factor):
+            self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
+            self.f1_ref,_ = self.cgs_ref.step(self.f1_ref, self.counter, return_fpost=self.cgs_ref.returnFpost)
+            self.counter += 1
+
+        self.u2 = self._load_u2()
+        _, self.u1 = get_velocity(self.f1, self.cgs)
+        _, self.u1_ref = get_velocity(self.f1_ref, self.cgs_ref)
+
+        err1 = ((self.u2-self.u1_ref)**2).sum()
+        err2 = ((self.u2-self.u1)**2).sum()
+        #print(f"err1: {err1}, err2: {err2}, diff: {err1-err2}")
+        #reward = 1e8*((self.u2-self.u1_ref)**2 - (self.u2-self.u1)**2).sum()
+        reward = err1-err2
+        
+        #also compute the correlation of voriticity as it is a good stopping criteria
+        self.v1 = vorticity_2d(self.u1, self.kwargs1["dx_eff"])
+        self.v2 = vorticity_2d(self.u2, self.kwargs2["dx_eff"])
+        corr = np.corrcoef(self.v1.flatten(), self.v2.flatten())[0, 1]
+        terminated = bool(corr<0.97)
+        truncated = bool(self.counter>=self.max_episode_steps)
+        
+        return self.u1, reward, terminated, truncated, {}
+
+    def render(self):
+        print("Correlation:", np.corrcoef(self.v1.flatten(), self.v2.flatten())[0, 1])
+        print("MSE:", ((self.u1 - self.u2)**2).mean())
+        print("NMSE:", ((self.u1 - self.u2)**2).sum()/((self.u2)**2).sum())
+        print("pointwise relative mse:", (((self.u1 - self.u2)**2)/((self.u2)**2)+1e-6).mean())
+        # Plot v1 and v2 next to each other
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+        im1 = ax1.imshow(self.v1, vmin=-20, vmax=20, cmap=sn.cm.icefire)
+        im2 = ax2.imshow(self.v2, vmin=-20, vmax=20, cmap=sn.cm.icefire)
+        im3 = ax3.imshow((self.v1 - self.v2)**2, vmin=0, vmax=1)
+        ax1.axis('off')
+        ax2.axis('off')
+        ax3.axis('off')
+        ax1.set_title("CGS")
+        ax2.set_title("FGS")
+        ax3.set_title("MSE")
+        # Create a colorbar for the third plot
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im3, cax=cax)
+        plt.show()
+
+    def get_spectra(self):
+        _, E1 = energy_spectrum_2d(self.u1)
+        _, E2 = energy_spectrum_2d(self.u2)
+        return E1, E2
+    
+    def _load_u2(self):
+        u2 = np.load(self.fgs_dump_path + f"velocity_klmgrv_s{self.sampled_seed}_{str(int(self.counter*self.factor)).zfill(6)}.npy")
+        return u2
+    
+    def get_vorticity(self):
+        return vorticity_2d(self.u1, self.kwargs1["dx_eff"])
+    
+
+    def close(self):
+        # Clear GPU tensors if needed
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+        # Explicitly delete large objects
+        del self.cgs
+        del self.cgs_ref
+        del self.f1
+        del self.u1
+        del self.u2
+        del self.v1
+        del self.v2
+        del self.omg
+        
+        # Call garbage collector to free up memory
+        gc.collect()
+
+    # Optionally, you can also implement __del__ to ensure cleanup
+    def __del__(self):
+        self.close()
+
 
 
 def main():
