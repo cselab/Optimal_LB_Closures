@@ -1028,27 +1028,27 @@ class KolmogorovEnvironment7(BaseEnvironment, ABC):
         return vorticity_2d(self.u1, self.kwargs1["dx_eff"])
     
 
-    def close(self):
-        # Clear GPU tensors if needed
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-        
-        # Explicitly delete large objects
-        del self.cgs
-        del self.cgs_ref
-        del self.f1
-        del self.u1
-        del self.u2
-        del self.v1
-        del self.v2
-        del self.omg
-        
-        # Call garbage collector to free up memory
-        gc.collect()
-
-    # Optionally, you can also implement __del__ to ensure cleanup
-    def __del__(self):
-        self.close()
+#    def close(self):
+#        # Clear GPU tensors if needed
+#        if torch.cuda.is_available():
+#            torch.cuda.empty_cache()
+#        
+#        # Explicitly delete large objects
+#        del self.cgs
+#        del self.cgs_ref
+#        del self.f1
+#        del self.u1
+#        del self.u2
+#        del self.v1
+#        del self.v2
+#        del self.omg
+#        
+#        # Call garbage collector to free up memory
+#        gc.collect()
+#
+#    # Optionally, you can also implement __del__ to ensure cleanup
+#    def __del__(self):
+#        self.close()
 
 
 

@@ -58,7 +58,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
 
     #ENVIRONMENT ARGUMENTS 
-    parser.add_argument("--step_factor", type=int, default=2)
+    parser.add_argument("--step_factor", type=int, default=1)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
     parser.add_argument("--max_interactions", type=int, default=1536-1)
@@ -66,14 +66,14 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--test_num", type=int, default=1)
 
     #POLICY ARGUMENTS 
-    parser.add_argument("--learning_rate", type=float, default=3e-4)
+    parser.add_argument("--learning_rate", type=float, default=3e-5)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--reward_normalization", type=bool, default=True) 
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=-1e-4)
+    parser.add_argument("--ent_coef", type=float, default=-1e-3)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
@@ -88,7 +88,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--max_epoch", type=int, default=10)
     parser.add_argument("--step_per_epoch", type=int, default=1536-1)
     parser.add_argument("--repeat_per_collect", type=int, default=3)
-    parser.add_argument("--episode_per_test", type=int, default=2)
+    parser.add_argument("--episode_per_test", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
