@@ -53,7 +53,7 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--algorithm", type=str, default="ppo")
-    parser.add_argument("--environment", type=str, default="Kolmogorov6")
+    parser.add_argument("--environment", type=str, default="Kolmogorov7")
 
     parser.add_argument("--seed", type=int, default=0)
 
@@ -66,16 +66,16 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--test_num", type=int, default=1)
 
     #POLICY ARGUMENTS 
-    parser.add_argument("--learning_rate", type=float, default=3e-5)
+    parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
-    parser.add_argument("--gamma", type=float, default=1.)
+    parser.add_argument("--gamma", type=float, default=0.8)
     parser.add_argument("--reward_normalization", type=bool, default=True)
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=-1e-4)
+    parser.add_argument("--ent_coef", type=float, default=0)
     parser.add_argument("--max_grad_norm", type=float, default=1.)
-    parser.add_argument("--gae_lambda", type=float, default=0.9) 
+    parser.add_argument("--gae_lambda", type=float, default=0.8) 
 
     #COLLECTOR ARGUMENTS
     parser.add_argument("--buffer_size", type=int, default=20000)
@@ -87,10 +87,10 @@ def get_args() -> argparse.Namespace:
     #TRAINER ARGUMENTS
     parser.add_argument("--max_epoch", type=int, default=10)
     parser.add_argument("--step_per_epoch", type=int, default=1536-1)
-    parser.add_argument("--repeat_per_collect", type=int, default=3)
+    parser.add_argument("--repeat_per_collect", type=int, default=1)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--step_per_collect", type=int, default=200)
+    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
     parser.add_argument("--reward_threshold", type=int, default=-5e-4)
 
@@ -164,7 +164,7 @@ if __name__ == '__main__':
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
-    logger = WandbLogger2(config=args, train_interval=100, update_interval=100,
+    logger = WandbLogger2(config=args, train_interval=1000, update_interval=100,
                              test_interval=1, info_interval=1)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))

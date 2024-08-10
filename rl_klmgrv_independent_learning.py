@@ -57,7 +57,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=-1e-5)
+    parser.add_argument("--ent_coef", type=float, default=0.05)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
@@ -166,8 +166,8 @@ if __name__ == '__main__':
         repeat_per_collect=args.repeat_per_collect,
         episode_per_test=args.episode_per_test,
         batch_size=args.batch_size,
-        #step_per_collect=args.step_per_collect,
-        episode_per_collect=args.episode_per_collect,
+        step_per_collect=args.step_per_collect,
+        #episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
         #stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
