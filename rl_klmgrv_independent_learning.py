@@ -1,34 +1,20 @@
 import argparse
 import numpy as np
 import torch
-import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import os
-import sys
 from time import strftime
  
-from tianshou.data import Batch, Collector, ReplayBuffer, VectorReplayBuffer
-from tianshou.env import DummyVectorEnv
+from tianshou.data import Batch, Collector, VectorReplayBuffer
 from tianshou.trainer import OnpolicyTrainer
-
 from lib.environments import *
 from lib.policy import MarlPPOPolicy
 from lib.distributions import ElementwiseNormal
 from lib.utils import save_batch_to_file, model_name
-from lib.trainer import MyOnpolicyTrainer
 from lib.models import *
 from lib.custom_tianshou.my_logger import WandbLogger2
-
-#temporary solution for xlb imports
-sys.path.append(os.path.abspath('/home/pfischer/XLB'))
-#from my_flows.kolmogorov_2d import Kolmogorov_flow
-from my_flows.helpers import get_kwargs
-
-#from lib.custom_tianshou.my_actors import MyActorProb
-
 import wandb
 wandb.require("core")
-
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -37,7 +23,7 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--algorithm", type=str, default="ppo")
-    parser.add_argument("--environment", type=str, default="Kolmogorov6")
+    parser.add_argument("--environment", type=str, default="Kolmogorov8")
 
     parser.add_argument("--seed", type=int, default=0)
 
@@ -45,20 +31,20 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--step_factor", type=int, default=1)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
-    parser.add_argument("--max_interactions", type=int, default=1536-1)
+    parser.add_argument("--max_interactions", type=int, default=1535)
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
 
     #POLICY ARGUMENTS 
-    parser.add_argument("--learning_rate", type=float, default=1e-5)
+    parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
-    parser.add_argument("--gamma", type=float, default=0.998)
+    parser.add_argument("--gamma", type=float, default=0.97)
     parser.add_argument("--reward_normalization", type=bool, default=True) 
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=0.05)
-    parser.add_argument("--max_grad_norm", type=float, default=0.5)
+    parser.add_argument("--ent_coef", type=float, default=1e-3)
+    parser.add_argument("--max_grad_norm", type=float, default=1.)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
     #COLLECTOR ARGUMENTS
@@ -70,13 +56,13 @@ def get_args() -> argparse.Namespace:
     
     #TRAINER ARGUMENTS
     parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=1536-1)
+    parser.add_argument("--step_per_epoch", type=int, default=1535)
     parser.add_argument("--repeat_per_collect", type=int, default=3)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
-    parser.add_argument("--reward_threshold", type=int, default=-5e-4)
+    parser.add_argument("--reward_threshold", type=int, default=1550)
 
     return parser.parse_known_args()[0]
 
@@ -119,6 +105,7 @@ if __name__ == '__main__':
     critic = MyFCNNCriticProb(in_channels=2, device=device).to(device)
     optim = torch.optim.Adam(actor.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
+    #dist = ElementwiseNormal
 
     policy = MarlPPOPolicy(actor=actor,
         critic=critic, 
@@ -148,7 +135,7 @@ if __name__ == '__main__':
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
-    logger = WandbLogger2(config=args, train_interval=100, update_interval=100,
+    logger = WandbLogger2(config=args, train_interval=1000, update_interval=100,
                              test_interval=1, info_interval=1)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
@@ -170,7 +157,7 @@ if __name__ == '__main__':
         #episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
-        #stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
+        stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
     )
     
     #######################################################################################################

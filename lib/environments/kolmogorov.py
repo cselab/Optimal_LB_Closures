@@ -1083,7 +1083,7 @@ class KolmogorovEnvironment8(BaseEnvironment, ABC):
         self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny,2), dtype=np.float64)
         self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
         self.step_factor = step_factor
-        self.max_episode_steps = np.min([max_episode_steps,endTime1])
+        self.max_episode_steps = np.min([max_episode_steps, endTime1])
         self.trivial_action = np.ones((self.cgs.nx, self.cgs.ny))
 
         #FGS
@@ -1108,14 +1108,10 @@ class KolmogorovEnvironment8(BaseEnvironment, ABC):
         self.u2 = self._load_u2()
         self.v1 = vorticity_2d(self.u1, self.kwargs1["dx_eff"])
         self.v2 = vorticity_2d(self.u2, self.kwargs2["dx_eff"])
-
         self.cgs_ref = Kolmogorov_flow(**self.kwargs1)
-
         return self.u1, {}
     
     def step(self, action):
-        # load in action and get rid of channel dimension
-        #action = action[0]
         if action.shape != self.action_space.shape:
             try:
                 action = action.reshape(self.action_space.shape)
@@ -1148,7 +1144,7 @@ class KolmogorovEnvironment8(BaseEnvironment, ABC):
         corr = np.corrcoef(self.v1.flatten(), self.v2.flatten())[0, 1]
         terminated = bool(corr<0.97)
         truncated = bool(self.counter>=self.max_episode_steps)
-        
+
         return self.u1, reward, terminated, truncated, {}
 
     def render(self):
