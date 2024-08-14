@@ -61,21 +61,21 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--step_factor", type=int, default=1)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
-    parser.add_argument("--max_interactions", type=int, default=1536-1)
+    parser.add_argument("--max_interactions", type=int, default=1535)
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
 
     #POLICY ARGUMENTS 
     parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
-    parser.add_argument("--gamma", type=float, default=0.8)
+    parser.add_argument("--gamma", type=float, default=0.97)
     parser.add_argument("--reward_normalization", type=bool, default=True)
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=0)
+    parser.add_argument("--ent_coef", type=float, default=1e-5)
     parser.add_argument("--max_grad_norm", type=float, default=1.)
-    parser.add_argument("--gae_lambda", type=float, default=0.8) 
+    parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
     #COLLECTOR ARGUMENTS
     parser.add_argument("--buffer_size", type=int, default=20000)
@@ -86,13 +86,13 @@ def get_args() -> argparse.Namespace:
     
     #TRAINER ARGUMENTS
     parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=1536-1)
-    parser.add_argument("--repeat_per_collect", type=int, default=1)
+    parser.add_argument("--step_per_epoch", type=int, default=1535)
+    parser.add_argument("--repeat_per_collect", type=int, default=3)
     parser.add_argument("--episode_per_test", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
-    parser.add_argument("--reward_threshold", type=int, default=-5e-4)
+    parser.add_argument("--reward_threshold", type=int, default=1550)
 
     return parser.parse_known_args()[0]
 
@@ -119,8 +119,8 @@ if __name__ == '__main__':
                   160, 313, 21, 252, 235, 344, 42])
 
     assert seeds.shape[0] == np.unique(seeds).shape[0]
-    train_seeds = seeds[:30]
-    val_seeds = seeds[30:]
+    train_seeds = seeds[:29]
+    val_seeds = seeds[29:]
     #test_seeds = np.array([69, 33, 420])
     
     train_env = KolmogorovEnvironment7(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
@@ -164,7 +164,7 @@ if __name__ == '__main__':
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
-    logger = WandbLogger2(config=args, train_interval=1000, update_interval=100,
+    logger = WandbLogger2(config=args, train_interval=1000, update_interval=1001,
                              test_interval=1, info_interval=1)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
@@ -186,7 +186,7 @@ if __name__ == '__main__':
         #episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
-        #stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
+        stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
     )
     
     #######################################################################################################

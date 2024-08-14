@@ -58,14 +58,10 @@ class MarlPPOPolicy(MarlA2CPolicy):
                 if self._norm_adv and len(minibatch) > 1:
                     # CNN_MARL contributors: mean over batches
                     mean, std = minibatch.adv.mean(dim=0), minibatch.adv.std(dim=0)
-                    minibatch.adv = (minibatch.adv -
-                                     mean) / (std + self._eps)  # per-batch norm
-                ratio = (dist.log_prob(minibatch.act) -
-                         minibatch.logp_old).exp().float()
+                    minibatch.adv = (minibatch.adv-mean)/(std+self._eps)  # per-batch norm
+                ratio = (dist.log_prob(minibatch.act)-minibatch.logp_old).exp().float()
                 surr1 = ratio * minibatch.adv
-                surr2 = ratio.clamp(
-                    1.0 - self._eps_clip, 1.0 + self._eps_clip
-                ) * minibatch.adv
+                surr2 = ratio.clamp(1.0-self._eps_clip, 1.0+self._eps_clip) * minibatch.adv
                 if self._dual_clip:
                     clip1 = torch.min(surr1, surr2)
                     clip2 = torch.max(clip1, self._dual_clip * minibatch.adv)
