@@ -14,16 +14,8 @@ import gymnasium as gym
 from gymnasium import spaces
 from gymnasium.wrappers import TimeLimit, RescaleAction, TransformObservation
 from stable_baselines3.common.env_checker import check_env
-
 from tianshou.data import Batch
-from torch.utils.data import DataLoader
-from scipy.interpolate import griddata
-from typing import Tuple
-
-from lib.utils import sample_from_dataloader
 from lib.environments.base import BaseEnvironment
-from lib.environments.velocity_generation import VelocityFieldGenerator
-from lib.datasets import get_train_val_test_initial_conditions_dataset
 from lib.models.wrappers import MarlModel
 
 #temporary solution for xlb imports
@@ -978,8 +970,8 @@ class KolmogorovEnvironment7(BaseEnvironment, ABC):
         _, self.u1 = get_velocity(self.f1, self.cgs)
         _, self.u1_ref = get_velocity(self.f1_ref, self.cgs_ref)
 
-        err1 = ((self.u2-self.u1_ref)**2).sum()
-        err2 = ((self.u2-self.u1)**2).sum()
+        err1 = ((self.u2-self.u1_ref)**2).mean()
+        err2 = ((self.u2-self.u1)**2).mean()
         #print(f"err1: {err1}, err2: {err2}, diff: {err1-err2}")
         #reward = 1e8*((self.u2-self.u1_ref)**2 - (self.u2-self.u1)**2).sum()
         reward = np.exp(err1-err2)
@@ -1049,6 +1041,7 @@ class KolmogorovEnvironment7(BaseEnvironment, ABC):
 #    # Optionally, you can also implement __del__ to ensure cleanup
 #    def __del__(self):
 #        self.close()
+
 
 
 #change to local rewards 
@@ -1180,36 +1173,3 @@ class KolmogorovEnvironment8(BaseEnvironment, ABC):
     
     def get_vorticity(self):
         return vorticity_2d(self.u1, self.kwargs1["dx_eff"])
-    
-
-
-
-def main():
-    #here a trivial run of the environment is displayed
-    #path to initial velocity and density field
-    u0_path = "/home/pfischer/XLB/vel_init/velocity_burn_in_1806594.npy" #4096x4096 simulation
-    rho0_path = "/home/pfischer/XLB/vel_init/density_burn_in_1806594.npy" #4096x4096 simulation
-
-    kwargs1, _,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=1) #cgs 
-    kwargs2, _,_,_ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, lamb=2) #fgs
-
-    env = KolmogorovEnvironment(kwargs1, kwargs2)
-    env = TimeLimit(env, max_episode_steps=5000)
-    env = RescaleAction(env, min_action=-1., max_action=1.)
-    env = TransformObservation(env, lambda obs: (obs/20))
-
-    check_env(env, warn=True)
-
-    obs ,_ = env.reset()
-    omg = env.unwrapped.omg
-    for i in tqdm(range(1000)):
-        obs, _, _, _, _  = env.step([0.])
-
-        if i%250 == 0:
-            #print(act)
-            env.render()
-
-
-
-if __name__ == "__main__":
-    main()

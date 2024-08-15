@@ -164,7 +164,7 @@ if __name__ == '__main__':
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
-    logger = WandbLogger2(config=args, train_interval=1000, update_interval=1001,
+    logger = WandbLogger2(config=args, train_interval=1000, update_interval=10,
                              test_interval=1, info_interval=1)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
