@@ -36,17 +36,18 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--test_num", type=int, default=1)
 
     #POLICY ARGUMENTS 
-    parser.add_argument("--learning_rate", type=float, default=3e-5)
+    parser.add_argument("--learning_rate", type=float, default=3e-4)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
-    parser.add_argument("--gamma", type=float, default=0.97)
-    parser.add_argument("--reward_normalization", type=bool, default=True) 
-    parser.add_argument("--advantage_normalization", type=bool, default=True) 
+    parser.add_argument("--gamma", type=float, default=0.9)
+    parser.add_argument("--reward_normalization", type=bool, default=False) 
+    parser.add_argument("--advantage_normalization", type=bool, default=False) 
     parser.add_argument("--recompute_advantage", type=bool, default=False)
     parser.add_argument("--deterministic_eval", type=bool, default=True)
+    parser.add_argument("--value_clip", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
     parser.add_argument("--ent_coef", type=float, default=1e-6)
-    parser.add_argument("--vf_coef", type=float, default=2e-7)
+    parser.add_argument("--vf_coef", type=float, default=5e-2)
     parser.add_argument("--max_grad_norm", type=float, default=1.)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
@@ -60,9 +61,9 @@ def get_args() -> argparse.Namespace:
     #TRAINER ARGUMENTS
     parser.add_argument("--max_epoch", type=int, default=10)
     parser.add_argument("--step_per_epoch", type=int, default=1535)
-    parser.add_argument("--repeat_per_collect", type=int, default=3)
+    parser.add_argument("--repeat_per_collect", type=int, default=1)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
     parser.add_argument("--reward_threshold", type=int, default=1550)
@@ -103,8 +104,8 @@ if __name__ == '__main__':
     assert train_env.observation_space.shape is not None  # for mypy
     assert train_env.action_space.shape is not None
     #initialize PPO
-    actor = MyFCNNActorProb(in_channels=2, device=device).to(device)
-    critic = MyFCNNCriticProb(in_channels=2, device=device).to(device)
+    actor = MyFCNNActorProb2(in_channels=2, device=device).to(device)
+    critic = MyFCNNCriticProb2(in_channels=2, device=device).to(device)
     optim = torch.optim.Adam(actor.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
     #dist = ElementwiseNormal
@@ -117,6 +118,7 @@ if __name__ == '__main__':
         discount_factor=args.gamma,
         reward_normalization=args.reward_normalization, 
         advantage_normalization = args.advantage_normalization,
+        value_clip = args.value_clip,
         deterministic_eval=args.deterministic_eval,
         action_scaling=args.action_scaling,
         action_bound_method=args.action_bound_method,
@@ -127,9 +129,9 @@ if __name__ == '__main__':
         recompute_advantage=args.recompute_advantage,
     )
 
-    #load trained bolicy
+    #load trained bolicy to continue training
     DUMP_PATH = "dump/Kolmogorov8_ppo_cgs1_fgs16/"
-    ID = "20240814-173551"
+    ID = "20240822-035530"
     policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
 
     #######################################################################################################
@@ -163,11 +165,11 @@ if __name__ == '__main__':
         repeat_per_collect=args.repeat_per_collect,
         episode_per_test=args.episode_per_test,
         batch_size=args.batch_size,
-        #step_per_collect=args.step_per_collect,
-        episode_per_collect=args.episode_per_collect,
+        step_per_collect=args.step_per_collect,
+        #episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
-        stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
+        #stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
     )
     
     #######################################################################################################

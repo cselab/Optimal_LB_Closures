@@ -1073,8 +1073,8 @@ class KolmogorovEnvironment8(BaseEnvironment, ABC):
         #other stuff  
         self.factor = int(fgs_lamb/cgs_lamb)
         self.counter = 0
-        self.observation_space = spaces.Box(low=-20, high=20, shape=(self.cgs.nx, self.cgs.ny,2), dtype=np.float64)
-        self.action_space = spaces.Box(low=0.9, high=1.1, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-2, high=2, shape=(self.cgs.nx, self.cgs.ny,2), dtype=np.float64)
+        self.action_space = spaces.Box(low=0.995, high=1.005, shape=(self.cgs.nx, self.cgs.ny), dtype=np.float32)
         self.step_factor = step_factor
         self.max_episode_steps = np.min([max_episode_steps, endTime1])
         self.trivial_action = np.ones((self.cgs.nx, self.cgs.ny))
@@ -1129,7 +1129,8 @@ class KolmogorovEnvironment8(BaseEnvironment, ABC):
 
         err1 = ((self.u2-self.u1_ref)**2).mean(axis=2)
         err2 = ((self.u2-self.u1)**2).mean(axis=2)
-        reward = np.exp(err1-err2)
+        #reward = np.exp(1e5*(err1-err2))
+        reward = 1e4*(err1-err2)
 
         #also compute the correlation of voriticity as it is a good stopping criteria
         self.v1 = vorticity_2d(self.u1, self.kwargs1["dx_eff"])
@@ -1147,8 +1148,8 @@ class KolmogorovEnvironment8(BaseEnvironment, ABC):
         print("pointwise relative mse:", (((self.u1 - self.u2)**2)/((self.u2)**2)+1e-6).mean())
         # Plot v1 and v2 next to each other
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
-        im1 = ax1.imshow(self.v1, vmin=-20, vmax=20, cmap=sn.cm.icefire)
-        im2 = ax2.imshow(self.v2, vmin=-20, vmax=20, cmap=sn.cm.icefire)
+        im1 = ax1.imshow(self.v1, vmin=-10, vmax=10, cmap=sn.cm.icefire)
+        im2 = ax2.imshow(self.v2, vmin=-10, vmax=10, cmap=sn.cm.icefire)
         im3 = ax3.imshow((self.v1 - self.v2)**2, vmin=0, vmax=1)
         ax1.axis('off')
         ax2.axis('off')

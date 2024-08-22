@@ -63,7 +63,7 @@ class MyFCNNActorProb(nn.Module):
         )
         self.sigma = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
                          bias=True, padding_mode=padding_mode),
-                         nn.Softplus(threshold=1)
+                         nn.Softplus()
         )
 
         self._initialize_weights()
@@ -269,3 +269,106 @@ class FcNN_to_critic_converter(nn.Module):
         logits = self.fcnn_backbone(obs.reshape(batch, 1, 128, 128))
         logits = logits.reshape(batch, -1)
         return logits, state
+
+
+
+
+# deeper networks!
+
+class MyFCNNActorProb2(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular"):
+        super().__init__()
+        self.device = device
+        self.fcnn = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=2, dilation=2, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=3, dilation=3, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=4, dilation=4, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=3, dilation=3, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=2, dilation=2, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            )
+
+        self.mu = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.Tanh()
+        )
+        self.sigma = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1, padding=1, dilation=1,
+                         bias=True, padding_mode=padding_mode),
+                         nn.Softplus()
+        )
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Initialize the weights of the last layer of self.fcnn
+        with torch.no_grad():
+            #self.fcnn[4].weight *= 1/100
+            self.mu[0].weight *= 1/100
+            self.sigma[0].weight *= 1/100
+            self.sigma[0].bias.fill_(-0.9)
+        
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.fcnn(obs.reshape(batch, -1, 128, 128))
+        mu = self.mu(logits)
+        sigma = self.sigma(logits)
+        mu, sigma = mu.reshape(batch,128,128), sigma.reshape(batch,128,128)
+        return (mu, sigma), state
+    
+
+
+# different to tianshou, this network has activation functions in the last layer such that 
+# the constraints |mu| <= 1, 0<=sigma<=1 are satisfyed automatically
+class MyFCNNCriticProb2(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=1, feature_dim=64, out_channels=1, padding_mode="circular"):
+        super().__init__()
+        self.device = device
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=2, dilation=2, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=3, dilation=3, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=4, dilation=4, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=3, dilation=3, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=3, stride=1,
+                       padding=2, dilation=2, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=3, stride=1,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode)
+            )
+
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        values = self.model(obs.reshape(batch, -1, 128, 128))
+        values = values.reshape(batch,128,128)
+        return values
