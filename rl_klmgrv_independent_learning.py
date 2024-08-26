@@ -23,7 +23,7 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--algorithm", type=str, default="ppo")
-    parser.add_argument("--environment", type=str, default="Kolmogorov8")
+    parser.add_argument("--environment", type=str, default="Kolmogorov9")
 
     parser.add_argument("--seed", type=int, default=0)
 
@@ -47,7 +47,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
     parser.add_argument("--ent_coef", type=float, default=1e-6)
-    parser.add_argument("--vf_coef", type=float, default=5e-2)
+    parser.add_argument("--vf_coef", type=float, default=5e-1)
     parser.add_argument("--max_grad_norm", type=float, default=1.)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
@@ -66,7 +66,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
-    parser.add_argument("--reward_threshold", type=int, default=1550)
+    parser.add_argument("--reward_threshold", type=int, default=0.1)
 
     return parser.parse_known_args()[0]
 
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     #load trained bolicy to continue training
     DUMP_PATH = "dump/Kolmogorov8_ppo_cgs1_fgs16/"
-    ID = "20240822-035530"
+    ID = "20240820-113544"
     policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
 
     #######################################################################################################
@@ -169,7 +169,7 @@ if __name__ == '__main__':
         #episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
-        #stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
+        stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
     )
     
     #######################################################################################################
