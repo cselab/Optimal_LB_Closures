@@ -8,7 +8,7 @@ from time import strftime
 from tianshou.data import Batch, Collector, VectorReplayBuffer
 from tianshou.trainer import OnpolicyTrainer
 from lib.environments import *
-from lib.policy import MarlPPOPolicy
+from lib.policy import MarlPPOPolicy, IndpPGPolicy
 from lib.utils import save_batch_to_file, model_name
 from lib.models import *
 from lib.custom_tianshou.my_logger import WandbLogger2
@@ -22,23 +22,23 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--algorithm", type=str, default="ppo")
-    parser.add_argument("--environment", type=str, default="Kolmogorov9")
+    parser.add_argument("--environment", type=str, default="Kolmogorov10")
 
     parser.add_argument("--seed", type=int, default=0)
 
     #ENVIRONMENT ARGUMENTS 
-    parser.add_argument("--step_factor", type=int, default=4)
+    parser.add_argument("--step_factor", type=int, default=1)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
-    parser.add_argument("--max_interactions", type=int, default=4223) #4224/4
+    parser.add_argument("--max_interactions", type=int, default=1587) #1588 - 1
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
 
     #POLICY ARGUMENTS 
-    parser.add_argument("--learning_rate", type=float, default=3e-4)
+    parser.add_argument("--learning_rate", type=float, default=1e-5)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
     parser.add_argument("--gamma", type=float, default=0.9)
-    parser.add_argument("--reward_normalization", type=bool, default=False) 
+    parser.add_argument("--reward_normalization", type=bool, default=True) 
     parser.add_argument("--advantage_normalization", type=bool, default=False) 
     parser.add_argument("--recompute_advantage", type=bool, default=False)
     parser.add_argument("--deterministic_eval", type=bool, default=True)
@@ -59,13 +59,13 @@ def get_args() -> argparse.Namespace:
     
     #TRAINER ARGUMENTS
     parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=1056) #1056
-    parser.add_argument("--repeat_per_collect", type=int, default=1)
+    parser.add_argument("--step_per_epoch", type=int, default=1587) #1056
+    parser.add_argument("--repeat_per_collect", type=int, default=3)
     parser.add_argument("--episode_per_test", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--step_per_collect", type=int, default=100)
+    #parser.add_argument("--step_per_collect", type=int, default=100)
     parser.add_argument("--episode_per_collect", type=int, default=1)
-    parser.add_argument("--reward_threshold", type=int, default=1.)
+    parser.add_argument("--reward_threshold", type=int, default=100.)
 
     return parser.parse_known_args()[0]
 
@@ -95,37 +95,31 @@ if __name__ == '__main__':
     val_seeds = seeds[29:]
     #test_seeds = np.array([69, 33, 420])
     
-    train_env = KolmogorovEnvironment9(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
-    test_env = KolmogorovEnvironment9(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    train_env = KolmogorovEnvironment10(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    test_env = KolmogorovEnvironment10(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
     #######################################################################################################
     ####### Policy ########################################################################################
     #######################################################################################################
     assert train_env.observation_space.shape is not None  # for mypy
     assert train_env.action_space.shape is not None
     #initialize PPO
-    actor = MyFCNNActorProb2(in_channels=2, device=device).to(device)
-    critic = MyFCNNCriticProb2(in_channels=2, device=device).to(device)
+    actor = local_actor_net(device=device).to(device)
+    #actor = MyFCNNActorProb2(in_channels=2, device=device).to(device)
+    #critic = MyFCNNCriticProb2(in_channels=2, device=device).to(device)
     optim = torch.optim.Adam(actor.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
     #dist = ElementwiseNormal
 
-    policy = MarlPPOPolicy(actor=actor,
-        critic=critic, 
-        optim=optim,
-        dist_fn=dist, 
-        action_space=train_env.action_space,
-        discount_factor=args.gamma,
-        reward_normalization=args.reward_normalization, 
-        advantage_normalization = args.advantage_normalization,
-        value_clip = args.value_clip,
-        deterministic_eval=args.deterministic_eval,
-        action_scaling=args.action_scaling,
-        action_bound_method=args.action_bound_method,
-        ent_coef = args.ent_coef,
-        vf_coef = args.vf_coef,
-        max_grad_norm = args.max_grad_norm,
-        gae_lambda=args.gae_lambda, 
-        recompute_advantage=args.recompute_advantage,
+    policy = IndpPGPolicy(model=actor,
+                          optim=optim,
+                          dist_fn=dist,
+                          action_space=train_env.action_space,
+                          discount_factor=args.gamma,
+                          reward_normalization=args.reward_normalization,
+                          deterministic_eval=args.deterministic_eval,
+                          observation_space=train_env.observation_space,
+                          action_scaling=args.action_scaling,
+                          action_bound_method = args.action_bound_method,
     )
 
     #load trained bolicy to continue training
@@ -146,8 +140,9 @@ if __name__ == '__main__':
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
+    project_name = os.getenv("WANDB_PROJECT", "f_states")
     logger = WandbLogger2(config=args, train_interval=1000, update_interval=10,
-                             test_interval=1, info_interval=1)
+                             test_interval=1, info_interval=1, project=project_name)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
     logger.load(writer)
@@ -164,8 +159,8 @@ if __name__ == '__main__':
         repeat_per_collect=args.repeat_per_collect,
         episode_per_test=args.episode_per_test,
         batch_size=args.batch_size,
-        step_per_collect=args.step_per_collect,
-        #episode_per_collect=args.episode_per_collect,
+        #step_per_collect=args.step_per_collect,
+        episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
         stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
