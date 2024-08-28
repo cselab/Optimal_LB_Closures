@@ -28,10 +28,10 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
 
     #ENVIRONMENT ARGUMENTS 
-    parser.add_argument("--step_factor", type=int, default=1)
+    parser.add_argument("--step_factor", type=int, default=10)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
-    parser.add_argument("--max_interactions", type=int, default=1535)
+    parser.add_argument("--max_interactions", type=int, default=1535) #4224
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
 
@@ -47,7 +47,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
     parser.add_argument("--ent_coef", type=float, default=1e-6)
-    parser.add_argument("--vf_coef", type=float, default=5e-1)
+    parser.add_argument("--vf_coef", type=float, default=5e-2)
     parser.add_argument("--max_grad_norm", type=float, default=1.)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
@@ -60,13 +60,13 @@ def get_args() -> argparse.Namespace:
     
     #TRAINER ARGUMENTS
     parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=1535)
+    parser.add_argument("--step_per_epoch", type=int, default=40) #1056
     parser.add_argument("--repeat_per_collect", type=int, default=1)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--step_per_collect", type=int, default=100)
+    parser.add_argument("--batch_size", type=int, default=20)
+    parser.add_argument("--step_per_collect", type=int, default=20)
     parser.add_argument("--episode_per_collect", type=int, default=1)
-    parser.add_argument("--reward_threshold", type=int, default=0.1)
+    parser.add_argument("--reward_threshold", type=int, default=1.)
 
     return parser.parse_known_args()[0]
 
@@ -130,9 +130,9 @@ if __name__ == '__main__':
     )
 
     #load trained bolicy to continue training
-    DUMP_PATH = "dump/Kolmogorov8_ppo_cgs1_fgs16/"
-    ID = "20240820-113544"
-    policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
+    #DUMP_PATH = "dump/Kolmogorov8_ppo_cgs1_fgs16/"
+    #ID = "20240820-113544"
+    #policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
 
     #######################################################################################################
     ####### Collectors ####################################################################################

@@ -1181,7 +1181,7 @@ FGS_DATA_PATH_2 = "/home/pfischer/XLB/fgs2_data/"
 #change to Re 10000
 class KolmogorovEnvironment9(BaseEnvironment, ABC):
     
-    def __init__(self, step_factor=1, max_episode_steps=1535, seed=102, fgs_lamb=16, cgs_lamb=1, seeds=np.array([102]), Re=1e4):
+    def __init__(self, step_factor=1, max_episode_steps=1535, seed=102, fgs_lamb=16, cgs_lamb=1, seeds=np.array([102]), Re=10000):
         super().__init__()
 
         self.possible_seeds = seeds #add seeds as argument
