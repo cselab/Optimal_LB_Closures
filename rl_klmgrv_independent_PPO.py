@@ -45,8 +45,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--value_clip", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=1e-6)
-    parser.add_argument("--vf_coef", type=float, default=5e-2)
+    parser.add_argument("--ent_coef", type=float, default=1e-3)
+    parser.add_argument("--vf_coef", type=float, default=5e-3)
     parser.add_argument("--max_grad_norm", type=float, default=1.)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
 
@@ -62,9 +62,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--step_per_epoch", type=int, default=1587) #1056
     parser.add_argument("--repeat_per_collect", type=int, default=1)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=64)
-    #parser.add_argument("--step_per_collect", type=int, default=100)
-    parser.add_argument("--episode_per_collect", type=int, default=1)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--step_per_collect", type=int, default=100)
+    #parser.add_argument("--episode_per_collect", type=int, default=1)
     parser.add_argument("--reward_threshold", type=int, default=100.)
 
     return parser.parse_known_args()[0]
@@ -103,30 +103,37 @@ if __name__ == '__main__':
     assert train_env.observation_space.shape is not None  # for mypy
     assert train_env.action_space.shape is not None
     #initialize PPO
-    actor = local_actor_net(device=device).to(device)
-    #actor = MyFCNNActorProb2(in_channels=2, device=device).to(device)
-    #critic = MyFCNNCriticProb2(in_channels=2, device=device).to(device)
-    optim = torch.optim.Adam(actor.parameters(), lr=args.learning_rate, eps=args.adam_eps)
+    actor = local_actor_net2(device=device).to(device)
+    critic = local_critic_net2(device=device).to(device)
+    actor_critic = ActorCritic(actor=actor, critic=critic)
+    optim = torch.optim.AdamW(actor_critic.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
     #dist = ElementwiseNormal
 
-    policy = IndpPGPolicy(model=actor,
-                          optim=optim,
-                          dist_fn=dist,
-                          action_space=train_env.action_space,
-                          discount_factor=args.gamma,
-                          reward_normalization=args.reward_normalization,
-                          deterministic_eval=args.deterministic_eval,
-                          observation_space=train_env.observation_space,
-                          action_scaling=args.action_scaling,
-                          action_bound_method = args.action_bound_method,
-                          
+
+    policy = MarlPPOPolicy(actor=actor,
+        critic=critic, 
+        optim=optim,
+        dist_fn=dist, 
+        action_space=train_env.action_space,
+        discount_factor=args.gamma,
+        reward_normalization=args.reward_normalization, 
+        advantage_normalization = args.advantage_normalization,
+        value_clip = args.value_clip,
+        deterministic_eval=args.deterministic_eval,
+        action_scaling=args.action_scaling,
+        action_bound_method=args.action_bound_method,
+        ent_coef = args.ent_coef,
+        vf_coef = args.vf_coef,
+        max_grad_norm = args.max_grad_norm,
+        gae_lambda=args.gae_lambda, 
+        recompute_advantage=args.recompute_advantage,
     )
 
     #load trained bolicy to continue training
-    DUMP_PATH = "dump/Kolmogorov11_ppo_cgs1_fgs16/"
-    ID = "20240907-094917"
-    policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
+    #DUMP_PATH = "dump/Kolmogorov11_ppo_cgs1_fgs16/"
+    #ID = "20240907-094917"
+    #policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
 
     #######################################################################################################
     ####### Collectors ####################################################################################
@@ -160,8 +167,8 @@ if __name__ == '__main__':
         repeat_per_collect=args.repeat_per_collect,
         episode_per_test=args.episode_per_test,
         batch_size=args.batch_size,
-        #step_per_collect=args.step_per_collect,
-        episode_per_collect=args.episode_per_collect,
+        step_per_collect=args.step_per_collect,
+        #episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
         stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
