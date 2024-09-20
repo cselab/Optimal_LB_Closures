@@ -1542,7 +1542,7 @@ class KolmogorovEnvironment11(BaseEnvironment, ABC):
         err1 = ((self.u2-self.u1_ref)**2).mean(axis=2)
         err2 = ((self.u2-self.u1)**2).mean(axis=2)
         #reward = np.exp(1e5*(err1-err2))
-        reward = 1e4*(err1-err2)
+        reward = 1e5*(err1-err2) + 1
 
         #compute neq filed
         rho, u = self.cgs.update_macroscopic(self.f1)

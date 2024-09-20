@@ -533,37 +533,3 @@ class local_critic_net2(nn.Module):
         values = self.model(obs.reshape(batch, -1, 128, 128))
         values = values.reshape(batch,128,128)
         return values
-
-
-
-#Q-learning network
-class local_critic_net3(nn.Module):
-
-    def __init__(self, device="cpu", in_channels=9, feature_dim=32, out_channels=1, padding_mode="circular"):
-        super().__init__()
-        self.device = device
-        self.model = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=5, stride=1,
-                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=5, stride=1,
-                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=5, stride=1,
-                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=5, stride=1,
-                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
-        )
-
-    def forward(self, obs, state=None, info={}):
-        if not isinstance(obs, torch.Tensor):
-            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
-        batch = obs.shape[0]
-
-        values = self.model(obs.reshape(batch, -1, 128, 128))
-        values = values.reshape(batch,128,128)
-        return values
-
-
-    
