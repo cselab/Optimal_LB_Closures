@@ -89,7 +89,6 @@ class MyFCNNActorProb(nn.Module):
         return (mu, sigma), state
     
 
-
 # different to tianshou, this network has activation functions in the last layer such that 
 # the constraints |mu| <= 1, 0<=sigma<=1 are satisfyed automatically
 class MyFCNNCriticProb(nn.Module):
@@ -125,7 +124,6 @@ class MyFCNNCriticProb(nn.Module):
         values = self.value(logits)
         values = values.reshape(batch,128,128)
         return values
-
 
 
 class MyFcnnActor(nn.Module):
@@ -254,7 +252,6 @@ class Backbone(nn.Module):
         return logits, state
 
 
-
 class FcNN_to_critic_converter(nn.Module):
 
     def __init__(self, fcnn_backbone, device="cpu"):
@@ -271,10 +268,7 @@ class FcNN_to_critic_converter(nn.Module):
         return logits, state
 
 
-
-
 # deeper networks!
-
 class MyFCNNActorProb2(nn.Module):
 
     def __init__(self, device="cpu", in_channels=1, feature_dim=3, out_channels=1, padding_mode="circular"):
@@ -333,7 +327,6 @@ class MyFCNNActorProb2(nn.Module):
         return (mu, sigma), state
     
 
-
 # different to tianshou, this network has activation functions in the last layer such that 
 # the constraints |mu| <= 1, 0<=sigma<=1 are satisfyed automatically
 class MyFCNNCriticProb2(nn.Module):
@@ -373,7 +366,6 @@ class MyFCNNCriticProb2(nn.Module):
         values = values.reshape(batch,128,128)
         return values
     
-
 
 class local_actor_net(nn.Module):
 
@@ -420,7 +412,6 @@ class local_actor_net(nn.Module):
         mu, sigma = mu.reshape(batch,128,128), sigma.reshape(batch,128,128)
         return (mu, sigma), state
     
-
 
 #local actor net with bigger perceptive field
 class local_actor_net2(nn.Module):
@@ -533,3 +524,68 @@ class local_critic_net2(nn.Module):
         values = self.model(obs.reshape(batch, -1, 128, 128))
         values = values.reshape(batch,128,128)
         return values
+
+
+
+class walker_actor(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=24, feature_dim=128, out_channels=4):
+        super().__init__()
+        self.device = device
+        self.model = nn.Sequential(
+            nn.Linear(in_channels, feature_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(feature_dim, feature_dim),
+            nn.ReLU(inplace=True),
+        )
+
+        self.mu = nn.Sequential(nn.Linear(feature_dim, out_channels),
+                         nn.Tanh(),
+        )
+        self.sigma = nn.Sequential(nn.Linear(feature_dim, out_channels),
+                         nn.Softplus()
+        )
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Initialize the weights of the last layer of self.fcnn
+        with torch.no_grad():
+            #self.fcnn[4].weight *= 1/100
+            self.mu[0].weight *= 1/100
+            self.sigma[0].weight *= 1/100
+            self.sigma[0].bias.fill_(-0.9)
+        
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.model(obs.reshape(batch, -1))
+        mu = self.mu(logits)
+        sigma = self.sigma(logits)
+        mu, sigma = mu.reshape(batch,-1), sigma.reshape(batch,-1)
+        return (mu, sigma), state
+    
+
+
+class walker_critic(nn.Module):
+    def __init__(self, device="cpu", in_channels=24, feature_dim=128, out_channels=1):
+        super().__init__()
+        self.device = device
+        self.model = nn.Sequential(
+            nn.Linear(in_channels, feature_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(feature_dim, feature_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(feature_dim, out_channels),
+        )
+                
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.model(obs.reshape(batch, -1))
+        return logits

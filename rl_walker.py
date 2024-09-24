@@ -7,6 +7,9 @@ from time import strftime
  
 from tianshou.data import Batch, Collector, VectorReplayBuffer
 from tianshou.trainer import OnpolicyTrainer
+from tianshou.policy import PPOPolicy
+from tianshou.env import DummyVectorEnv
+
 from lib.environments import *
 from lib.policy import MarlPPOPolicy, IndpPGPolicy
 from lib.utils import save_batch_to_file, model_name
@@ -22,7 +25,7 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--algorithm", type=str, default="ppo")
-    parser.add_argument("--environment", type=str, default="Kolmogorov11")
+    parser.add_argument("--environment", type=str, default="walker")
 
     parser.add_argument("--seed", type=int, default=0)
 
@@ -30,14 +33,14 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--step_factor", type=int, default=1)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
-    parser.add_argument("--max_interactions", type=int, default=1587) #1588 - 1
-    parser.add_argument("--train_num", type=int, default=1)
-    parser.add_argument("--test_num", type=int, default=1)
+    parser.add_argument("--max_interactions", type=int, default=1600) #1588 - 1
+    parser.add_argument("--train_num", type=int, default=32)
+    parser.add_argument("--test_num", type=int, default=10)
 
     #POLICY ARGUMENTS 
     parser.add_argument("--learning_rate", type=float, default=3e-4)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
-    parser.add_argument("--gamma", type=float, default=0.97)
+    parser.add_argument("--gamma", type=float, default=0.999)
     parser.add_argument("--reward_normalization", type=bool, default=True)
     parser.add_argument("--advantage_normalization", type=bool, default=False) 
     parser.add_argument("--recompute_advantage", type=bool, default=False)
@@ -45,13 +48,14 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--value_clip", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=0.) #1e-4
+    parser.add_argument("--ent_coef", type=float, default=0.0)
     parser.add_argument("--vf_coef", type=float, default=0.5)
+    parser.add_argument("--clip_range", type=float, default=0.18)
     parser.add_argument("--max_grad_norm", type=float, default=1.)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
 
     #COLLECTOR ARGUMENTS
-    parser.add_argument("--buffer_size", type=int, default=50000)
+    parser.add_argument("--buffer_size", type=int, default=20000)
 
     #LOGGER ARGUMENTS
     parser.add_argument("--logdir", type=str, default="log")
@@ -59,11 +63,11 @@ def get_args() -> argparse.Namespace:
     
     #TRAINER ARGUMENTS
     parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=10*1587) #1056
+    parser.add_argument("--step_per_epoch", type=int, default=5e6) #1056
     parser.add_argument("--repeat_per_collect", type=int, default=1)
     parser.add_argument("--episode_per_test", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--step_per_collect", type=int, default=1024)
+    parser.add_argument("--step_per_collect", type=int, default=2048)
     #parser.add_argument("--episode_per_collect", type=int, default=1)
     parser.add_argument("--reward_threshold", type=int, default=100.)
 
@@ -86,38 +90,26 @@ if __name__ == '__main__':
     #######################################################################################################
     ####### environments ##################################################################################
     #######################################################################################################
-    seeds = np.array([102, 348, 270, 106, 71, 188, 20, 121, 214, 330, 87, 372,
-                  99, 359, 151, 130, 149, 308, 257, 343, 413, 293, 385, 191, 276,
-                  160, 313, 21, 252, 235, 344, 42])
+    #train_env = gym.make("BipedalWalker-v3", hardcore=False)
+    #test_env = gym.make("BipedalWalker-v3", hardcore=False)
 
-    assert seeds.shape[0] == np.unique(seeds).shape[0]
-    train_seeds = seeds[:29]
-    val_seeds = seeds[29:]
-    #test_seeds = np.array([69, 33, 420])
-    
-    train_env = KolmogorovEnvironment11(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
-    test_env = KolmogorovEnvironment11(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
-    train_env = TransformObservation(train_env, lambda obs: (obs/0.00014))
-    test_env = env = TransformObservation(test_env, lambda obs: (obs/0.00014))
+    train_envs = DummyVectorEnv([lambda: gym.make("BipedalWalker-v3", hardcore=False) for _ in range(args.train_num)])
+    test_envs = DummyVectorEnv([lambda: gym.make("BipedalWalker-v3", hardcore=False)for _ in range(args.test_num)])
     #######################################################################################################
     ####### Policy ########################################################################################
     #######################################################################################################
     assert train_env.observation_space.shape is not None  # for mypy
     assert train_env.action_space.shape is not None
     #initialize PPO
-    #actor = local_actor_net2(device=device).to(device)
-    #critic = local_critic_net2(device=device).to(device)
-    #actor = MyFCNNActorProb2(in_channels=9, device=device).to(device)
-    #critic = MyFCNNCriticProb2(in_channels=9, device=device).to(device)
-    actor = local_actor_net(device=device).to(device)
-    critic = local_critic_net2(device=device).to(device)
+    actor = walker_actor(device=device).to(device)
+    critic = walker_critic(device=device).to(device)
     actor_critic = ActorCritic(actor=actor, critic=critic)
     optim = torch.optim.AdamW(actor_critic.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
     #dist = ElementwiseNormal
 
 
-    policy = MarlPPOPolicy(actor=actor,
+    policy = PPOPolicy(actor=actor,
         critic=critic,
         optim=optim,
         dist_fn=dist, 
@@ -131,6 +123,7 @@ if __name__ == '__main__':
         action_bound_method=args.action_bound_method,
         ent_coef = args.ent_coef,
         vf_coef = args.vf_coef,
+        eps_clip=args.clip_range,
         max_grad_norm = args.max_grad_norm,
         gae_lambda=args.gae_lambda, 
         recompute_advantage=args.recompute_advantage,
@@ -154,7 +147,7 @@ if __name__ == '__main__':
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
-    project_name = os.getenv("WANDB_PROJECT", "f_states")
+    project_name = os.getenv("WANDB_PROJECT", "walker")
     logger = WandbLogger2(config=args, train_interval=1000, update_interval=10,
                              test_interval=1, info_interval=1, project=project_name)
     writer = SummaryWriter(log_path)

@@ -35,7 +35,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--test_num", type=int, default=1)
 
     #POLICY ARGUMENTS 
-    parser.add_argument("--learning_rate", type=float, default=1e-4)
+    parser.add_argument("--learning_rate", type=float, default=3e-4)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
     parser.add_argument("--gamma", type=float, default=0.9)
     parser.add_argument("--reward_normalization", type=bool, default=True)
@@ -45,7 +45,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--value_clip", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
     parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=1e-6)
+    parser.add_argument("--ent_coef", type=float, default=1e-2)
     parser.add_argument("--vf_coef", type=float, default=5e-2)
     parser.add_argument("--max_grad_norm", type=float, default=1.)
     parser.add_argument("--gae_lambda", type=float, default=0.9) 
@@ -97,6 +97,8 @@ if __name__ == '__main__':
     
     train_env = KolmogorovEnvironment11(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
     test_env = KolmogorovEnvironment11(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    train_env = TransformObservation(train_env, lambda obs: (obs/0.00014))
+    test_env = env = TransformObservation(test_env, lambda obs: (obs/0.00014))
     #######################################################################################################
     ####### Policy ########################################################################################
     #######################################################################################################
@@ -120,13 +122,14 @@ if __name__ == '__main__':
                           observation_space=train_env.observation_space,
                           action_scaling=args.action_scaling,
                           action_bound_method = args.action_bound_method,
+                          ent_coef = args.ent_coef,
                           
     )
 
     #load trained bolicy to continue training
-    DUMP_PATH = "dump/Kolmogorov11_ppo_cgs1_fgs16/"
-    ID = "20240907-094917"
-    policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
+    #DUMP_PATH = "dump/Kolmogorov11_ppo_cgs1_fgs16/"
+    #ID = "20240907-094917"
+    #policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
 
     #######################################################################################################
     ####### Collectors ####################################################################################
@@ -164,7 +167,7 @@ if __name__ == '__main__':
         episode_per_collect=args.episode_per_collect,
         show_progress=True,
         logger=logger,
-        stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
+        #stop_fn=lambda mean_reward: mean_reward >= args.reward_threshold,
     )
     
     #######################################################################################################
