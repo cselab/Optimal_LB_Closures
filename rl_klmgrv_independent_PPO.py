@@ -38,8 +38,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--learning_rate", type=float, default=3e-4)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
     parser.add_argument("--gamma", type=float, default=0.97)
-    parser.add_argument("--reward_normalization", type=bool, default=True)
-    parser.add_argument("--advantage_normalization", type=bool, default=False) 
+    parser.add_argument("--reward_normalization", type=bool, default=False)
+    parser.add_argument("--advantage_normalization", type=bool, default=True) 
     parser.add_argument("--recompute_advantage", type=bool, default=False)
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--value_clip", type=bool, default=True)
@@ -47,11 +47,12 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--action_bound_method", type=str, default="tanh")
     parser.add_argument("--ent_coef", type=float, default=0.) #1e-4
     parser.add_argument("--vf_coef", type=float, default=0.5)
+    parser.add_argument("--clip_range", type=float, default=0.1)
     parser.add_argument("--max_grad_norm", type=float, default=1.)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
 
     #COLLECTOR ARGUMENTS
-    parser.add_argument("--buffer_size", type=int, default=50000)
+    parser.add_argument("--buffer_size", type=int, default=20000)
 
     #LOGGER ARGUMENTS
     parser.add_argument("--logdir", type=str, default="log")
@@ -59,11 +60,11 @@ def get_args() -> argparse.Namespace:
     
     #TRAINER ARGUMENTS
     parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=10*1587) #1056
+    parser.add_argument("--step_per_epoch", type=int, default=15870) #1056
     parser.add_argument("--repeat_per_collect", type=int, default=1)
-    parser.add_argument("--episode_per_test", type=int, default=1)
+    parser.add_argument("--episode_per_test", type=int, default=3)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--step_per_collect", type=int, default=1024)
+    parser.add_argument("--step_per_collect", type=int, default=512)
     #parser.add_argument("--episode_per_collect", type=int, default=1)
     parser.add_argument("--reward_threshold", type=int, default=100.)
 
@@ -110,7 +111,7 @@ if __name__ == '__main__':
     #actor = MyFCNNActorProb2(in_channels=9, device=device).to(device)
     #critic = MyFCNNCriticProb2(in_channels=9, device=device).to(device)
     actor = local_actor_net(device=device).to(device)
-    critic = local_critic_net2(device=device).to(device)
+    critic = local_critic_net3(device=device).to(device)
     actor_critic = ActorCritic(actor=actor, critic=critic)
     optim = torch.optim.AdamW(actor_critic.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
@@ -131,15 +132,16 @@ if __name__ == '__main__':
         action_bound_method=args.action_bound_method,
         ent_coef = args.ent_coef,
         vf_coef = args.vf_coef,
+        eps_clip=args.clip_range,
         max_grad_norm = args.max_grad_norm,
         gae_lambda=args.gae_lambda, 
         recompute_advantage=args.recompute_advantage,
     )
 
     #load trained bolicy to continue training
-    #DUMP_PATH = "dump/Kolmogorov11_ppo_cgs1_fgs16/"
-    #ID = "20240919-035155"
-    #policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
+    DUMP_PATH = "dump/Kolmogorov11_ppo_cgs1_fgs16/"
+    ID = "20240926-220347"
+    policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
 
     #######################################################################################################
     ####### Collectors ####################################################################################
