@@ -2,12 +2,20 @@ import argparse
 import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
+from torch.optim.lr_scheduler import LambdaLR
+
 import os
 from time import strftime
+from gymnasium import wrappers
+from gymnasium.wrappers.monitoring.video_recorder import VideoRecorder
+import gymnasium as gym
  
 from tianshou.data import Batch, Collector, VectorReplayBuffer, PrioritizedVectorReplayBuffer, ReplayBuffer
-from tianshou.trainer import OnpolicyTrainer, OffpolicyTrainer
-from tianshou.policy import PPOPolicy, DDPGPolicy, SACPolicy, TD3Policy
+from tianshou.trainer import OnpolicyTrainer, offpolicy_trainer, onpolicy_trainer
+from tianshou.policy import PPOPolicy, DDPGPolicy, SACPolicy
+from tianshou.env import DummyVectorEnv
+from tianshou.utils.net.common import Net
+from tianshou.utils.net.continuous import Actor, Critic, ActorProb
 from tianshou.exploration import GaussianNoise, OUNoise
 
 from lib.environments import *
@@ -24,8 +32,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--algorithm", type=str, default="td3")
-    parser.add_argument("--environment", type=str, default="Kolmogorov14")
+    parser.add_argument("--algorithm", type=str, default="PPO")
+    parser.add_argument("--environment", type=str, default="walker")
 
     parser.add_argument("--seed", type=int, default=0)
 
@@ -33,25 +41,28 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--step_factor", type=int, default=1)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
-    parser.add_argument("--max_interactions", type=int, default=1587) #1588 - 1
+    parser.add_argument("--max_interactions", type=int, default=1600) #1588 - 1
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
+    parser.add_argument("--env_id", type=str, default="BipedalWalker-v3")
 
     #POLICY ARGUMENTS 
     parser.add_argument("--learning_rate", type=float, default=3e-4)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
-    parser.add_argument("--gamma", type=float, default=0.97)
-    parser.add_argument("--reward_normalization", type=bool, default=False)
-    parser.add_argument("--advantage_normalization", type=bool, default=True) 
+    parser.add_argument("--gamma", type=float, default=0.99)
+    parser.add_argument("--reward_normalization", type=bool, default=True)
+    parser.add_argument("--advantage_normalization", type=bool, default=False) 
     parser.add_argument("--recompute_advantage", type=bool, default=False)
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--value_clip", type=bool, default=True)
     parser.add_argument("--action_scaling", type=bool, default=True)
-    parser.add_argument("--action_bound_method", type=str, default="tanh")
-    parser.add_argument("--ent_coef", type=float, default=0.) #1e-4
-    parser.add_argument("--vf_coef", type=float, default=0.5)
-    parser.add_argument("--clip_range", type=float, default=0.1)
-    parser.add_argument("--max_grad_norm", type=float, default=1.)
+    parser.add_argument("--dual-clip", type=float, default=None)
+    parser.add_argument("--value-clip", type=int, default=0)
+    parser.add_argument("--action_bound_method", type=str, default="clip")
+    parser.add_argument("--ent_coef", type=float, default=0.0)
+    parser.add_argument("--vf_coef", type=float, default=0.25)
+    parser.add_argument("--clip_range", type=float, default=0.2)
+    parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
 
     #COLLECTOR ARGUMENTS
@@ -62,10 +73,10 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--task", type=str, default="local-omega-learning")
     
     #TRAINER ARGUMENTS
-    parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=15870) #1056
-    parser.add_argument("--repeat_per_collect", type=int, default=1)
-    parser.add_argument("--episode_per_test", type=int, default=3)
+    parser.add_argument("--max_epoch", type=int, default=6)
+    parser.add_argument("--step_per_epoch", type=int, default=5e6) #1056
+    parser.add_argument("--repeat_per_collect", type=int, default=3)
+    parser.add_argument("--episode_per_test", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--step_per_collect", type=int, default=512)
     #parser.add_argument("--episode_per_collect", type=int, default=1)
@@ -90,135 +101,149 @@ if __name__ == '__main__':
     #######################################################################################################
     ####### environments ##################################################################################
     #######################################################################################################
-    seeds = np.array([102, 348, 270, 106, 71, 188, 20, 121, 214, 330, 87, 372,
-                  99, 359, 151, 130, 149, 308, 257, 343, 413, 293, 385, 191, 276,
-                  160, 313, 21, 252, 235, 344, 42])
+    #train_env = DummyVectorEnv([lambda: gym.make("BipedalWalker-v3", hardcore=False) for _ in range(args.train_num)])
+    #test_env = DummyVectorEnv([lambda: gym.make("BipedalWalker-v3", hardcore=False)for _ in range(args.test_num)])
+    env = gym.make(args.env_id)
 
-    assert seeds.shape[0] == np.unique(seeds).shape[0]
-    train_seeds = seeds[:29]
-    val_seeds = seeds[29:]
-    #test_seeds = np.array([69, 33, 420])
-    
-    train_env = KolmogorovEnvironment14(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
-    test_env = KolmogorovEnvironment14(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
-    #train_env = TransformObservation(train_env, lambda obs: (obs/0.00014))
-    #test_env = env = TransformObservation(test_env, lambda obs: (obs/0.00014))
+    train_envs = DummyVectorEnv([lambda: gym.make(args.env_id) for _ in range(args.train_num)])
+    test_envs = DummyVectorEnv([lambda: gym.make(args.env_id)for _ in range(args.test_num)])
+    #train_envs.seed(args.seed)
+    #test_envs.seed(args.seed)
     #######################################################################################################
     ####### Policy ########################################################################################
     #######################################################################################################
-    #initialize PPO
-    #actor = local_actor_net2(device=device).to(device)
-    #critic = local_critic_net2(device=device).to(device)
-    #actor = MyFCNNActorProb2(in_channels=9, device=device).to(device)
-    #critic = MyFCNNCriticProb2(in_channels=9, device=device).to(device)
 
-    max_action = 0.0025
+   # Neural networks and policy
+    state_shape = env.observation_space.shape or env.observation_space.n
+    action_shape = env.action_space.shape or env.action_space.n
+    max_action = env.action_space.high[0]
+    model_hyperparameters = {'hidden_sizes': [256, 256], 'learning_rate': 1e-3}
 
-    model_hyperparameters = {'learning_rate': 1e-3, 'estimation_step': 4}
+    # Actor
+    net_a = Net(state_shape, hidden_sizes=model_hyperparameters['hidden_sizes'], activation=nn.Tanh, device=device)
+    actor = ActorProb(net_a, action_shape, max_action=max_action, device=device, unbounded=True).to(device)
 
-    actor = central_actor_net(device=device).to(device)
-    actor_optim = torch.optim.Adam(actor.parameters(), lr=model_hyperparameters['learning_rate'])
+    # Critics
+    net_c1 = Net(state_shape, hidden_sizes=model_hyperparameters['hidden_sizes'], activation=nn.Tanh,
+                 device=device)
+    critic1 = Critic(net_c1, device=device).to(device)
 
-    critic1 = central_critic_net1(device=device).to(device)
-    critic1_optim = torch.optim.Adam(critic1.parameters(), lr=model_hyperparameters['learning_rate'])
+    torch.nn.init.constant_(actor.sigma_param, -0.5)
+    for m in list(actor.modules()) + list(critic1.modules()):
+        if isinstance(m, torch.nn.Linear):
+            # orthogonal initialization
+            torch.nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
+            torch.nn.init.zeros_(m.bias)
+
+    for m in actor.mu.modules():
+        if isinstance(m, torch.nn.Linear):
+            torch.nn.init.zeros_(m.bias)
+            m.weight.data.copy_(0.01 * m.weight.data)
     
-    critic2 = central_critic_net1(device=device).to(device)
-    critic2_optim = torch.optim.Adam(critic2.parameters(), lr=model_hyperparameters['learning_rate'])
+    actor_critic = ActorCritic(actor=actor, critic=critic1)
+    optim = torch.optim.Adam(actor_critic.parameters(), lr=model_hyperparameters['learning_rate'])
+    dist = torch.distributions.Normal
 
+    lr_scheduler = None
+    lr_decay=True
+    if lr_decay:
+        # decay learning rate to 0 linearly
+        max_update_num = np.ceil(
+            args.step_per_epoch / args.step_per_collect
+        ) * args.max_epoch
 
-    policy = TD3Policy(actor, actor_optim, critic1, critic1_optim, critic2, critic2_optim,
-                       exploration_noise=GaussianNoise(sigma=2 * max_action),
-                       estimation_step=model_hyperparameters['estimation_step'],
-                       action_space=test_env.action_space)
+        lr_scheduler = LambdaLR(
+            optim, lr_lambda=lambda epoch: 1 - epoch / max_update_num
+        )
 
-    #load trained bolicy to continue training
-    #DUMP_PATH = "dump/Kolmogorov11_ppo_cgs1_fgs16/"
-    #ID = "20240919-035155"
-    #policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
+    policy = PPOPolicy(actor=actor, critic=critic1, optim=optim, dist_fn=dist,
+                       discount_factor=args.gamma,
+                       gae_lambda=args.gae_lambda,
+                       max_grad_norm=args.max_grad_norm,
+                       vf_coef=args.vf_coef,
+                       ent_coef=args.ent_coef,
+                       reward_normalization=args.reward_normalization,
+                       action_scaling=args.action_scaling,
+                       action_bound_method=args.action_bound_method,
+                       lr_scheduler=lr_scheduler,
+                       action_space=env.action_space,
+                       eps_clip=args.clip_range,
+                       value_clip=args.value_clip,
+                       dual_clip=args.dual_clip,
+                       advantage_normalization=args.advantage_normalization,
+                       recompute_advantage=args.recompute_advantage,
+                       )
+
 
     #######################################################################################################
     ####### Collectors ####################################################################################
     #######################################################################################################
     # Collectors
     use_prioritised_replay_buffer = False
-    prioritized_buffer_hyperparameters = {'total_size': 2_000, 'buffer_num': 1, 'alpha': 0.4, 'beta': 0.5}
+    prioritized_buffer_hyperparameters = {'total_size': 20000, 'buffer_num': 1, 'alpha': 0.4, 'beta': 0.5}
     if use_prioritised_replay_buffer:
-        train_collector = Collector(policy, train_env,
+        train_collector = Collector(policy, train_envs,
                                             PrioritizedVectorReplayBuffer(**prioritized_buffer_hyperparameters),
                                             exploration_noise=True)
     else:
-        train_collector = Collector(policy, train_env,
+        train_collector = Collector(policy, train_envs,
                                             ReplayBuffer(size=prioritized_buffer_hyperparameters['total_size']),
                                             exploration_noise=True)
-    test_collector = Collector(policy, test_env, exploration_noise=True)
+    test_collector = Collector(policy, test_envs, exploration_noise=True)
 
     #######################################################################################################
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, args.algorithm)
-    project_name = os.getenv("WANDB_PROJECT", "f-states")
+    project_name = os.getenv("WANDB_PROJECT", "walker")
     logger = WandbLogger2(config=args, train_interval=1000, update_interval=10,
                              test_interval=1, info_interval=1, project=project_name)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
     logger.load(writer)
 
-    def save_best_fn(policy):
-        torch.save(policy.state_dict(), os.path.join(log_path, "best_policy.pth"))
-
     #######################################################################################################
     ####### Trainer #######################################################################################
     #######################################################################################################
-    # Sigma schedule
-    def build_sigma_schedule(max_sigma=0.5, min_sigma=0.0, steps_per_epoch=50000, decay_time_steps=10000):
-        def custom_sigma_schedule(epoch, env_step):
-            decay_per_step = (max_sigma - min_sigma) / decay_time_steps
-            step_number = (epoch - 1) * steps_per_epoch + env_step
-
-            current_sigma = max_sigma - step_number * decay_per_step
-            if current_sigma < 0.0:
-                current_sigma = 0.0
-            policy._noise = GaussianNoise(sigma=current_sigma * max_action)
-
-        return custom_sigma_schedule
     
     # Training
-    trainer_hyperparameters = {'max_epoch': 6, 'step_per_epoch': 200_000, 'step_per_collect': 10,
+    trainer_hyperparameters = {'max_epoch': 30, 'step_per_epoch': 200_000, 'step_per_collect': 512,
                                'episode_per_test': 10,
-                               'batch_size': 128}
-    decay_steps = int(trainer_hyperparameters['max_epoch'] * trainer_hyperparameters['step_per_epoch'] * 0.05)
-    build_sigma_hyperparameters = {'max_sigma': 0.6, 'min_sigma': 0.0, 'decay_time_steps': decay_steps}
+                               'batch_size': 64}
     all_hypeparameters = dict(model_hyperparameters, **trainer_hyperparameters, **prioritized_buffer_hyperparameters)
     all_hypeparameters['seed'] = args.seed
     all_hypeparameters['use_prioritised_replay_buffer'] = use_prioritised_replay_buffer
 
-    trainer = OffpolicyTrainer(policy, train_collector, test_collector, **trainer_hyperparameters,
-                               train_fn=build_sigma_schedule(**build_sigma_hyperparameters,
-                                                             steps_per_epoch=trainer_hyperparameters['step_per_epoch']),
+    result = onpolicy_trainer(policy, train_collector, test_collector, **trainer_hyperparameters,
                                 stop_fn=None,
-                                save_best_fn=save_best_fn,
+                                repeat_per_collect=args.repeat_per_collect,
                                 logger=logger)
-        
+    
+
+    print(f'Finished training! Use {result["duration"]}')
+
+    
     #######################################################################################################
     #######  run training  ################################################################################
     #######################################################################################################
-    epoch_results = []
-    for _,epoch_stats,_ in trainer:
-        epoch_results.append(Batch(epoch_stats))
+    #epoch_results = []
+    #for _,epoch_stats,_ in trainer:
+    #    epoch_results.append(Batch(epoch_stats))
+    #trainer.run()
  
     # stack totoal results
-    total_results = Batch.stack(epoch_results)
+    #total_results = Batch.stack(epoch_results)
 
     # Generate a unique ID based on the current timestamp
     unique_id = strftime("%Y%m%d-%H%M%S")
 
     # Save total results
-    total_results_fname = f"{dump_dir}/training_stats_{unique_id}.pkl"
-    save_batch_to_file(total_results, total_results_fname)
+    #total_results_fname = f"{dump_dir}/training_stats_{unique_id}.pkl"
+    #save_batch_to_file(total_results, total_results_fname)
 
     # Save config file
-    config_fname = f"{dump_dir}/config_{unique_id}.pkl"
-    save_batch_to_file(args, config_fname)
+    #config_fname = f"{dump_dir}/config_{unique_id}.pkl"
+    #save_batch_to_file(args, config_fname)
 
     # Save policy
     policy_fname = f"{dump_dir}/policy_{unique_id}.pth"
