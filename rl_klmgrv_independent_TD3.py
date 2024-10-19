@@ -25,15 +25,15 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--algorithm", type=str, default="td3")
-    parser.add_argument("--environment", type=str, default="Kolmogorov14")
+    parser.add_argument("--environment", type=str, default="Kolmogorov19")
 
     parser.add_argument("--seed", type=int, default=0)
 
     #ENVIRONMENT ARGUMENTS 
-    parser.add_argument("--step_factor", type=int, default=1)
+    parser.add_argument("--step_factor", type=int, default=4)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
-    parser.add_argument("--fgs_resolution", type=int, default=16)
-    parser.add_argument("--max_interactions", type=int, default=1587) #1588 - 1
+    parser.add_argument("--fgs_resolution", type=int, default=1)
+    parser.add_argument("--max_interactions", type=int, default=20000) #1588 - 1
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
 
@@ -45,17 +45,18 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--advantage_normalization", type=bool, default=True) 
     parser.add_argument("--recompute_advantage", type=bool, default=False)
     parser.add_argument("--deterministic_eval", type=bool, default=True)
-    parser.add_argument("--value_clip", type=bool, default=True)
+    parser.add_argument("--value_clip", type=bool, default=False)
     parser.add_argument("--action_scaling", type=bool, default=True)
-    parser.add_argument("--action_bound_method", type=str, default="tanh")
+    parser.add_argument("--action_bound_method", type=str, default="clip")
     parser.add_argument("--ent_coef", type=float, default=0.) #1e-4
-    parser.add_argument("--vf_coef", type=float, default=0.5)
-    parser.add_argument("--clip_range", type=float, default=0.1)
-    parser.add_argument("--max_grad_norm", type=float, default=1.)
+    parser.add_argument("--vf_coef", type=float, default=0.25)
+    parser.add_argument("--clip_range", type=float, default=0.2)
+    parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
+    parser.add_argument("--estimation_step", type=int, default=4)
 
     #COLLECTOR ARGUMENTS
-    parser.add_argument("--buffer_size", type=int, default=20000)
+    parser.add_argument("--buffer_size", type=int, default=2000)
 
     #LOGGER ARGUMENTS
     parser.add_argument("--logdir", type=str, default="log")
@@ -63,13 +64,13 @@ def get_args() -> argparse.Namespace:
     
     #TRAINER ARGUMENTS
     parser.add_argument("--max_epoch", type=int, default=10)
-    parser.add_argument("--step_per_epoch", type=int, default=15870) #1056
+    parser.add_argument("--step_per_epoch", type=int, default=150000) #1056
     parser.add_argument("--repeat_per_collect", type=int, default=1)
-    parser.add_argument("--episode_per_test", type=int, default=3)
+    parser.add_argument("--episode_per_test", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--step_per_collect", type=int, default=512)
+    parser.add_argument("--step_per_collect", type=int, default=256) #256
     #parser.add_argument("--episode_per_collect", type=int, default=1)
-    parser.add_argument("--reward_threshold", type=int, default=100.)
+    #parser.add_argument("--reward_threshold", type=int, default=100.)
 
     return parser.parse_known_args()[0]
 
@@ -90,17 +91,19 @@ if __name__ == '__main__':
     #######################################################################################################
     ####### environments ##################################################################################
     #######################################################################################################
-    seeds = np.array([102, 348, 270, 106, 71, 188, 20, 121, 214, 330, 87, 372,
-                  99, 359, 151, 130, 149, 308, 257, 343, 413, 293, 385, 191, 276,
-                  160, 313, 21, 252, 235, 344, 42])
-
-    assert seeds.shape[0] == np.unique(seeds).shape[0]
-    train_seeds = seeds[:29]
-    val_seeds = seeds[29:]
-    #test_seeds = np.array([69, 33, 420])
+    #seeds = np.array([102, 348, 270, 106, 71, 188, 20, 121, 214, 330, 87, 372,
+    #              99, 359, 151, 130, 149, 308, 257, 343, 413, 293, 385, 191, 276,
+    #              160, 313, 21, 252, 235, 344, 42])
+    #
+    #assert seeds.shape[0] == np.unique(seeds).shape[0]
+    #train_seeds = seeds[:29]
+    #val_seeds = seeds[29:]
+    ##test_seeds = np.array([69, 33, 420])
+    train_seeds = [102]
+    val_seeds = [102]    
     
-    train_env = KolmogorovEnvironment14(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
-    test_env = KolmogorovEnvironment14(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    train_env = KolmogorovEnvironment19(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    test_env = KolmogorovEnvironment19(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
     #train_env = TransformObservation(train_env, lambda obs: (obs/0.00014))
     #test_env = env = TransformObservation(test_env, lambda obs: (obs/0.00014))
     #######################################################################################################
@@ -114,21 +117,19 @@ if __name__ == '__main__':
 
     max_action = 0.0025
 
-    model_hyperparameters = {'learning_rate': 1e-3, 'estimation_step': 4}
-
     actor = central_actor_net(device=device).to(device)
-    actor_optim = torch.optim.Adam(actor.parameters(), lr=model_hyperparameters['learning_rate'])
+    actor_optim = torch.optim.Adam(actor.parameters(), lr=args.learning_rate)
 
     critic1 = central_critic_net1(device=device).to(device)
-    critic1_optim = torch.optim.Adam(critic1.parameters(), lr=model_hyperparameters['learning_rate'])
+    critic1_optim = torch.optim.Adam(critic1.parameters(), lr=args.learning_rate)
     
     critic2 = central_critic_net1(device=device).to(device)
-    critic2_optim = torch.optim.Adam(critic2.parameters(), lr=model_hyperparameters['learning_rate'])
+    critic2_optim = torch.optim.Adam(critic2.parameters(), lr=args.learning_rate)
 
 
     policy = TD3Policy(actor, actor_optim, critic1, critic1_optim, critic2, critic2_optim,
                        exploration_noise=GaussianNoise(sigma=2 * max_action),
-                       estimation_step=model_hyperparameters['estimation_step'],
+                       estimation_step=args.estimation_step,
                        action_space=test_env.action_space)
 
     #load trained bolicy to continue training
@@ -148,7 +149,7 @@ if __name__ == '__main__':
                                             exploration_noise=True)
     else:
         train_collector = Collector(policy, train_env,
-                                            ReplayBuffer(size=prioritized_buffer_hyperparameters['total_size']),
+                                            ReplayBuffer(size=args.buffer_size),
                                             exploration_noise=True)
     test_collector = Collector(policy, test_env, exploration_noise=True)
 
@@ -156,15 +157,15 @@ if __name__ == '__main__':
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, args.algorithm)
-    project_name = os.getenv("WANDB_PROJECT", "f-states")
-    logger = WandbLogger2(config=args, train_interval=1000, update_interval=10,
+    project_name = os.getenv("WANDB_PROJECT", "f_states")
+    logger = WandbLogger2(config=args, train_interval=1, update_interval=1,
                              test_interval=1, info_interval=1, project=project_name)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
     logger.load(writer)
 
-    def save_best_fn(policy):
-        torch.save(policy.state_dict(), os.path.join(log_path, "best_policy.pth"))
+    #def save_best_fn(policy):
+    #    torch.save(policy.state_dict(), os.path.join(log_path, "best_policy.pth"))
 
     #######################################################################################################
     ####### Trainer #######################################################################################
@@ -183,20 +184,19 @@ if __name__ == '__main__':
         return custom_sigma_schedule
     
     # Training
-    trainer_hyperparameters = {'max_epoch': 6, 'step_per_epoch': 200_000, 'step_per_collect': 10,
-                               'episode_per_test': 10,
-                               'batch_size': 128}
-    decay_steps = int(trainer_hyperparameters['max_epoch'] * trainer_hyperparameters['step_per_epoch'] * 0.05)
+    decay_steps = int(args.max_epoch * args.step_per_epoch * 0.05)
     build_sigma_hyperparameters = {'max_sigma': 0.6, 'min_sigma': 0.0, 'decay_time_steps': decay_steps}
-    all_hypeparameters = dict(model_hyperparameters, **trainer_hyperparameters, **prioritized_buffer_hyperparameters)
-    all_hypeparameters['seed'] = args.seed
-    all_hypeparameters['use_prioritised_replay_buffer'] = use_prioritised_replay_buffer
 
-    trainer = OffpolicyTrainer(policy, train_collector, test_collector, **trainer_hyperparameters,
+    trainer = OffpolicyTrainer(policy, train_collector, test_collector,
                                train_fn=build_sigma_schedule(**build_sigma_hyperparameters,
-                                                             steps_per_epoch=trainer_hyperparameters['step_per_epoch']),
+                                                             steps_per_epoch=args.step_per_epoch),
                                 stop_fn=None,
-                                save_best_fn=save_best_fn,
+                                max_epoch=args.max_epoch,
+                                step_per_epoch=args.step_per_epoch,
+                                step_per_collect=args.step_per_collect,
+                                batch_size=args.batch_size,
+                                episode_per_test=args.episode_per_test,
+                                #save_best_fn=save_best_fn,
                                 logger=logger)
         
     #######################################################################################################

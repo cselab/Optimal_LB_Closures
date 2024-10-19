@@ -526,7 +526,7 @@ class local_critic_net2(nn.Module):
         return values
 
 
-#local actor net with bigger perceptive field
+#local critic net with bigger perceptive field
 class local_critic_net3(nn.Module):
 
     def __init__(self, device="cpu", in_channels=9, feature_dim=16, out_channels=1, padding_mode="circular"):
@@ -674,7 +674,7 @@ class central_actor_net(nn.Module):
         return mu, state
 
 
-#local actor net with bigger perceptive field
+#central critic
 class central_critic_net1(nn.Module):
 
     def __init__(self, device="cpu", in_channels=10, feature_dim=32, out_channels=1, padding_mode="circular"):
@@ -727,3 +727,182 @@ class central_critic_net1(nn.Module):
         #print(values.shape)
         values = self.fcnn(values)
         return values
+
+
+#central critic for PPO
+class central_critic_net2(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=9, feature_dim=32, out_channels=1, padding_mode="circular"):
+        super().__init__()
+        self.device = device
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=9, stride=4,
+                       padding=4, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=5, stride=2,
+                       padding=2, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=2,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2,2),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2,2),
+        )
+
+        self.fcnn = nn.Sequential(
+            nn.Linear(256, 128),
+            nn.ReLU(inplace=True),
+            nn.Linear(128, 64),
+            nn.ReLU(inplace=True),
+            nn.Linear(64, 1),
+        )
+
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+
+        batch = obs.shape[0]
+        obs = obs.reshape(batch,-1,128,128)
+        
+        values = self.model(obs)
+        values = values.reshape(batch, -1)
+        values = self.fcnn(values)
+        return values
+
+
+#central critic for PPO
+class central_actor_net2(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=9, feature_dim=32, out_channels=1, padding_mode="circular"):
+        super().__init__()
+        self.device = device
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=9, stride=4,
+                       padding=4, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=5, stride=2,
+                       padding=2, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=2,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2,2),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2,2),
+        )
+
+        self.fcnn = nn.Sequential(
+            nn.Linear(256, 128),
+            nn.ReLU(inplace=True),
+            nn.Linear(128, 64),
+            nn.ReLU(inplace=True),
+        )
+
+        self.mu = nn.Sequential(
+            nn.Linear(64,1),
+            nn.Tanh()
+        )
+
+        self.sigma = nn.Sequential(
+            nn.Linear(64,1),
+            nn.Softplus()
+        )
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Initialize the weights of the last layer of self.fcnn
+        with torch.no_grad():
+            #self.fcnn[4].weight *= 1/100
+            self.mu[0].weight *= 1/100
+            self.sigma[0].weight *= 1/100
+            self.sigma[0].bias.fill_(-0.9)
+
+    
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.model(obs.reshape(batch, -1, 128, 128))
+        logits = logits.reshape(batch, -1)
+        logits = self.fcnn(logits)
+        mu = self.mu(logits)
+        sigma = self.sigma(logits)
+        return (mu, sigma), state
+
+
+
+#central critic for PPO
+class central_actor_net3(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=9, feature_dim=32, out_channels=1, padding_mode="circular"):
+        super().__init__()
+        self.device = device
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=9, stride=4,
+                       padding=4, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=5, stride=2,
+                       padding=2, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=2,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2,2),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1,
+                       padding=1, dilation=1, bias=True, padding_mode=padding_mode),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2,2),
+        )
+
+        self.fcnn = nn.Sequential(
+            nn.Linear(256, 128),
+            nn.ReLU(inplace=True),
+            nn.Linear(128, 64),
+            nn.ReLU(inplace=True),
+        )
+
+        self.mu = nn.Sequential(
+            nn.Linear(64,1),
+            nn.Tanh()
+        )
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Initialize the weights of the last layer of self.fcnn
+        with torch.no_grad():
+            #self.fcnn[4].weight *= 1/100
+            self.mu[0].weight *= 1/100
+
+    
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        logits = self.model(obs.reshape(batch, -1, 128, 128))
+        logits = logits.reshape(batch, -1)
+        logits = self.fcnn(logits)
+        mu = self.mu(logits)
+        return mu, state
+
+
+
+
+
