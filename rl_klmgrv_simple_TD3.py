@@ -30,9 +30,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
 
     #ENVIRONMENT ARGUMENTS 
-    parser.add_argument("--step_factor", type=int, default=4)
+    parser.add_argument("--step_factor", type=int, default=8)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
-    parser.add_argument("--fgs_resolution", type=int, default=1)
+    parser.add_argument("--fgs_resolution", type=int, default=16)
     parser.add_argument("--max_interactions", type=int, default=10000) #1588 - 1
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
@@ -41,8 +41,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--learning_rate", type=float, default=1e-4)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
     parser.add_argument("--gamma", type=float, default=0.99)
-    parser.add_argument("--reward_normalization", type=bool, default=True)
-    parser.add_argument("--advantage_normalization", type=bool, default=True) 
+    parser.add_argument("--reward_normalization", type=bool, default=False)
+    parser.add_argument("--advantage_normalization", type=bool, default=False) 
     parser.add_argument("--recompute_advantage", type=bool, default=False)
     parser.add_argument("--deterministic_eval", type=bool, default=True)
     parser.add_argument("--value_clip", type=bool, default=True)
@@ -52,7 +52,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--vf_coef", type=float, default=0.25)
     parser.add_argument("--clip_range", type=float, default=0.2)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
-    parser.add_argument("--gae_lambda", type=float, default=0.9)
+    parser.add_argument("--gae_lambda", type=float, default=0.95)
 
     #COLLECTOR ARGUMENTS
     parser.add_argument("--buffer_size", type=int, default=2000)
@@ -66,8 +66,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--step_per_epoch", type=int, default=1500) #1056
     parser.add_argument("--repeat_per_collect", type=int, default=1)
     parser.add_argument("--episode_per_test", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--step_per_collect", type=int, default=256)
+    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--step_per_collect", type=int, default=32)
     #parser.add_argument("--episode_per_collect", type=int, default=1)
     #parser.add_argument("--reward_threshold", type=int, default=100.)
 
@@ -76,6 +76,8 @@ def get_args() -> argparse.Namespace:
 
 
 if __name__ == '__main__':
+    # Generate a unique ID based on the current timestamp
+    unique_id = strftime("%Y%m%d-%H%M%S")
 
     #######################################################################################################
     ####### setup stuff *##################################################################################
@@ -150,7 +152,7 @@ if __name__ == '__main__':
     logger.load(writer)
 
     def save_best_fn(policy):
-        torch.save(policy.state_dict(), os.path.join(log_path, "best_policy.pth"))
+        torch.save(policy.state_dict(), os.path.join(dump_dir, f"best_policy{unique_id}.pth"))
 
     #######################################################################################################
     ####### Trainer #######################################################################################
@@ -192,9 +194,6 @@ if __name__ == '__main__':
  
     # stack totoal results
     total_results = Batch.stack(epoch_results)
-
-    # Generate a unique ID based on the current timestamp
-    unique_id = strftime("%Y%m%d-%H%M%S")
 
     # Save total results
     total_results_fname = f"{dump_dir}/training_stats_{unique_id}.pkl"
