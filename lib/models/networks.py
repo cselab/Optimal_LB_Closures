@@ -904,5 +904,75 @@ class central_actor_net3(nn.Module):
 
 
 
+import torch
+import torch.nn as nn
+
+class FullyConvNet_interpolating_agents(nn.Module):
+    def __init__(self, N, in_channels=1, device="cpu", padding_mode="circular"):
+        super().__init__()
+        self.N = N
+        self.device = device
+        receptive_field = 128 // N  # Receptive field calculation based on N
+
+        layers = []
+        # First convolutional block (no downsampling yet)
+        layers.append(nn.Conv2d(in_channels=in_channels, out_channels=32, kernel_size=3, stride=1, padding=1, padding_mode=padding_mode))
+        layers.append(nn.ReLU())
+        layers.append(nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=2, padding=1, padding_mode=padding_mode)) 
+        layers.append(nn.ReLU())
+
+        # Second convolutional block with downsampling
+        layers.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1, padding_mode=padding_mode)) 
+        layers.append(nn.ReLU())
+        
+        # Third block: Downsampling to achieve the right spatial size
+        layers.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1, padding_mode=padding_mode))
+        layers.append(nn.ReLU())
+
+        # **Adjust the number of stride=2 layers based on the receptive field**
+        # Skip additional downsampling, ensure you don't reduce beyond N x N
+        for _ in range(max(int(receptive_field / 4) - 1, 0)):
+            layers.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, padding_mode=padding_mode))  # No downsampling here
+            layers.append(nn.ReLU())
+
+        # Final convolution to map to output N x N (adjust stride to 1 to avoid further downsampling)
+        layers.append(nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, stride=1, padding=1, padding_mode=padding_mode))
+        layers.append(nn.ReLU())
+
+        self.model = nn.Sequential(*layers)
+
+        # Separate layers for mu and sigma
+        self.mu = nn.Sequential(
+            nn.Conv2d(in_channels=128, out_channels=1, kernel_size=3, stride=1, padding=1, bias=True, padding_mode=padding_mode),
+            nn.Tanh()
+        )
+        self.sigma = nn.Sequential(
+            nn.Conv2d(in_channels=128, out_channels=1, kernel_size=3, stride=1, padding=1, bias=True, padding_mode=padding_mode),
+            nn.Softplus()
+        )
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Initialize weights for output layers
+        with torch.no_grad():
+            self.mu[0].weight *= 1/100
+            self.sigma[0].weight *= 1/100
+            self.sigma[0].bias.fill_(-0.9)
+        
+    def forward(self, obs, state=None, info={}):
+        if not isinstance(obs, torch.Tensor):
+            obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+
+        # Pass through the model
+        logits = self.model(obs.reshape(batch, -1, 128, 128))  # Reshape to correct input shape
+        mu = self.mu(logits)
+        sigma = self.sigma(logits)
+        
+        # Ensure output shape is (batch, N, N)
+        mu, sigma = mu.reshape(batch, self.N, self.N), sigma.reshape(batch, self.N, self.N)
+        
+        return (mu, sigma), state
 
 
