@@ -903,10 +903,6 @@ class central_actor_net3(nn.Module):
         return mu, state
 
 
-
-import torch
-import torch.nn as nn
-
 class FullyConvNet_interpolating_agents(nn.Module):
     def __init__(self, N, in_channels=1, device="cpu", padding_mode="circular"):
         super().__init__()

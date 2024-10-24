@@ -26,7 +26,7 @@ def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--algorithm", type=str, default="ppo")
-    parser.add_argument("--environment", type=str, default="Kolmogorov25")
+    parser.add_argument("--environment", type=str, default="Kolmogorov24")
 
     parser.add_argument("--seed", type=int, default=0)
 
@@ -64,7 +64,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--task", type=str, default="local-omega-learning")
     
     #TRAINER ARGUMENTS
-    parser.add_argument("--max_epoch", type=int, default=100)
+    parser.add_argument("--max_epoch", type=int, default=200)
     parser.add_argument("--step_per_epoch", type=int, default=1500) #1056
     parser.add_argument("--repeat_per_collect", type=int, default=3)
     parser.add_argument("--episode_per_test", type=int, default=1)
@@ -88,6 +88,7 @@ if __name__ == '__main__':
     print(args)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+
     dump_dir = model_name(args)
 
     # Generate a unique ID based on the current timestamp
