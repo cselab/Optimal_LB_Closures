@@ -4,7 +4,8 @@ import pickle
 import numpy as np
 from tqdm import tqdm
 #temporary solution for xlb imports
-sys.path.append(os.path.abspath('/home/pfischer/XLB'))
+#sys.path.append(os.path.abspath('/home/pfischer/XLB'))
+sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
 from my_flows.kolmogorov_2d import Kolmogorov_flow, Kolmogorov_flow_KBC, decaying_flow
 from my_flows.helpers import get_kwargs, get_vorticity, get_velocity, get_kwargs4, get_moments, get_raw_moments
 from src.utils import *
@@ -16,7 +17,8 @@ from tianshou.data import Batch
 # PPO run for local actions and scaled loss
 DUMP_PATH = "dump/Kolmogorov22_ppo_cgs1_fgs16/"
 ID = "20241021-110311"
-INIT_PATH = "/home/pfischer/XLB/vel_init/"
+#INIT_PATH = "/home/pfischer/XLB/vel_init/"
+INIT_PATH = os.path.expanduser("~/XLB/vel_init/")
 
 #policy.load_state_dict(torch.load(DUMP_PATH+'policy_'+ID+'.pth'))
 with open(DUMP_PATH+'config_'+ID+'.pkl', 'rb') as f:
