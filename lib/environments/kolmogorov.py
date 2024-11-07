@@ -3595,12 +3595,9 @@ class KolmogorovEnvironment22(BaseEnvironment, ABC):
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
-        print(f"omega shape = {self.omg.shape}")
         self.cgs.omg = np.copy(self.omg)
-        print(f"cgs omega shape = {self.cgs.omg.shape}")
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
-        print(f"f shape = {self.f1.shape}")
         
         #other stuff  
         self.factor = int(fgs_lamb/cgs_lamb)

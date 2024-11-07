@@ -54,7 +54,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--clip_range", type=float, default=0.2)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
-    parser.add_argument("--lr-decay", type=int, default=False)
+    parser.add_argument("--lr-decay", type=int, default=True)
 
 
     #COLLECTOR ARGUMENTS
