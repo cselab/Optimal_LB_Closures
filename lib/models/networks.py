@@ -1149,3 +1149,50 @@ class FullyConvNet_interpolating_agents3(nn.Module):
         mu, sigma = mu.reshape(batch, self.N, self.N), sigma.reshape(batch, self.N, self.N)
         
         return (mu, sigma), state
+
+
+
+class local_actor_net_fast(nn.Module):
+
+    def __init__(self, device="cpu", in_channels=6, feature_dim=128, out_channels=1, padding_mode="circular", nx=128):
+        super().__init__()
+        self.device = device
+        self.nx = nx
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=feature_dim, kernel_size=1, stride=1,
+                       padding=0, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=feature_dim, out_channels=feature_dim, kernel_size=1, stride=1,
+                       padding=0, bias=True),
+            nn.ReLU(inplace=True),
+        )
+
+        self.mu = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=1, stride=1,
+                       padding=0, bias=True),
+                         nn.Tanh()
+        )
+        self.sigma = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=1, stride=1,
+                       padding=0, bias=True),
+                         nn.Softplus()
+        )
+
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Initialize the weights of the last layer of self.fcnn
+        with torch.no_grad():
+            #self.fcnn[4].weight *= 1/100
+            self.mu[0].weight *= 1/100
+            self.sigma[0].weight *= 1/100
+            self.sigma[0].bias.fill_(-0.9)
+        
+        
+    def forward(self, obs, state=None, info={}):
+        #if not isinstance(obs, torch.Tensor):
+        #obs = torch.tensor(obs, dtype=torch.float, device=self.device)
+        batch = obs.shape[0]
+        logits = self.model(obs)
+        mu = self.mu(logits)
+        #sigma = self.sigma(logits)
+        #mu, sigma = mu.reshape(batch,self.nx,self.nx), sigma.reshape(batch,self.nx,self.nx)
+        return mu.reshape(self.nx, self.nx)
