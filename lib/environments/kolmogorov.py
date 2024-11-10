@@ -10,6 +10,10 @@ import os
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import torch
 import gc
+import jax.numpy as jnp
+import jax
+from jax import jit
+from functools import partial
 
 import gymnasium as gym
 from gymnasium import spaces
@@ -24,6 +28,12 @@ sys.path.append(os.path.abspath('/home/pfischer/XLB'))
 from my_flows.kolmogorov_2d import Kolmogorov_flow, Kolmogorov_flow_KBC, decaying_flow
 from my_flows.helpers import get_kwargs, get_vorticity, get_velocity, get_kwargs4, get_moments, get_raw_moments
 from src.utils import *
+
+def jax2torch(x):
+    return torch.utils.dlpack.from_dlpack(jax.dlpack.to_dlpack(x))
+
+def torch2jax(x):
+    return jax.dlpack.from_dlpack(torch.utils.dlpack.to_dlpack(x))
 
 
 #first Kolmogorov Environment
@@ -3578,7 +3588,7 @@ class KolmogorovEnvironment22_global_higher(BaseEnvironment, ABC):
 
 
 # move back to full MARL setup
-class KolmogorovEnvironment22(BaseEnvironment, ABC):
+class KolmogorovEnvironment22_old(BaseEnvironment, ABC):
     
     def __init__(self, step_factor=1, max_episode_steps=20000, seed=102, fgs_lamb=16, cgs_lamb=1, seeds=np.array([102]), Re=10000):
         super().__init__()
@@ -3595,7 +3605,7 @@ class KolmogorovEnvironment22(BaseEnvironment, ABC):
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
-        self.cgs.omg = np.copy(self.omg)
+        #self.cgs.omega = np.copy(self.omg)
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         
@@ -3615,8 +3625,6 @@ class KolmogorovEnvironment22(BaseEnvironment, ABC):
         assert np.any(np.isnan(self.cov_inverse)) is not True
         assert self.cov@self.cov_inverse is not np.identity(len(self.means_dns))
 
-
-
     def seed(self, seed):
         np.random.seed(seed)
 
@@ -3628,7 +3636,7 @@ class KolmogorovEnvironment22(BaseEnvironment, ABC):
         self.kwargs1["u0_path"] = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy"
         self.kwargs1["rho0_path"] = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy"
         self.cgs = Kolmogorov_flow(**self.kwargs1)
-        self.cgs.omega = np.copy(self.omg)
+        self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
@@ -3636,20 +3644,23 @@ class KolmogorovEnvironment22(BaseEnvironment, ABC):
         return state, {}
     
     def step(self, action):
-        if action.shape != self.action_space.shape:
-            try:
-                action = action.reshape(self.action_space.shape)
-            except:
-                print("action reshaping didn't work")
-
-        if (np.any(self.action_space.low > action) or np.any(action > self.action_space.high)):
-            print("WARNING: Action is not in action space")
-            action = np.clip(action, self.action_space.low, self.action_space.high)
+        #if action.shape != self.action_space.shape:
+        #    try:
+        #        action = action.reshape(self.action_space.shape)
+        #    except:
+        #        print("action reshaping didn't work")
+        #
+        #if (np.any(self.action_space.low > action) or np.any(action > self.action_space.high)):
+        #    print("WARNING: Action is not in action space")
+        #    action = np.clip(action, self.action_space.low, self.action_space.high)
 
         self.cgs.omega = np.copy(self.omg * (1+action.reshape(self.omg.shape)))
+        #self.cgs.omega = np.copy(self.omg * (1+action))
         for _ in range(self.step_factor):
             self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
             self.counter += 1
+
+        #self.u2 = self._load_u2()
 
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
