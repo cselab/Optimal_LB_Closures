@@ -167,7 +167,6 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
 
     def E_loss(self, means_cgs, k):
         means_diff = (np.log(means_cgs[1:]*k[1:]**5)/10) - self.means_dns
-        print((-0.5 * means_diff.T @ self.cov_inverse @ means_diff))
         return 1 + np.log(np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff))/64
     
     def interpolate_actions(self, actions):
