@@ -4,7 +4,6 @@ import pickle
 import numpy as np
 from tqdm import tqdm
 #temporary solution for xlb imports
-#sys.path.append(os.path.abspath('/home/pfischer/XLB'))
 sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
 from my_flows.kolmogorov_2d import Kolmogorov_flow, Kolmogorov_flow_KBC, decaying_flow
 from my_flows.helpers import get_kwargs, get_vorticity, get_velocity, get_kwargs4, get_moments, get_raw_moments, update_macroscopic, momentum_flux, equilibrium

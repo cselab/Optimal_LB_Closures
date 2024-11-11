@@ -7,21 +7,18 @@ from tqdm import tqdm
 import wandb
 import sys
 import os
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import torch
 import gc
 import jax.numpy as jnp
 import jax
 from jax import jit
 from functools import partial
-
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from gymnasium import spaces
-#from tianshou.data import Batch
 from lib.environments.base import BaseEnvironment
-#from lib.models.wrappers import MarlModel
 
 #temporary solution for xlb imports
-sys.path.append(os.path.abspath('/home/pfischer/XLB'))
+sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
 from my_flows.kolmogorov_2d import Kolmogorov_flow, decaying_flow
 from my_flows.helpers import get_vorticity, get_velocity, get_kwargs4, get_moments, get_raw_moments
 from src.utils import *

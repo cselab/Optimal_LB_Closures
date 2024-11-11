@@ -19,7 +19,6 @@ wandb.require("core")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
