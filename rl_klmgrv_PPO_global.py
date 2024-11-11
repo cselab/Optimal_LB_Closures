@@ -14,7 +14,7 @@ from torch.optim.lr_scheduler import LambdaLR
 from lib.environments import *
 from lib.utils import save_batch_to_file, model_name
 from lib.models import *
-from lib.custom_tianshou.my_logger import WandbLogger2
+from lib.custom_tianshou.my_logger import WandbLogger
 import wandb
 wandb.require("core")
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
     project_name = os.getenv("WANDB_PROJECT", "repeat_experiments")
-    logger = WandbLogger2(config=args, train_interval=1000, update_interval=10,
+    logger = WandbLogger(config=args, train_interval=1000, update_interval=10,
                              test_interval=1, info_interval=1, project=project_name)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
