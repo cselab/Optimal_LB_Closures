@@ -15,7 +15,7 @@ from lib.environments import *
 from lib.policy import MarlPPOPolicy, IndpPGPolicy
 from lib.utils import save_batch_to_file, model_name
 from lib.models import *
-from lib.custom_tianshou.my_logger import WandbLogger2
+from lib.custom_tianshou.my_logger import WandbLogger
 import wandb
 wandb.require("core")
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -54,7 +54,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--clip_range", type=float, default=0.2)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
-    parser.add_argument("--lr-decay", type=int, default=False)
+    parser.add_argument("--lr-decay", type=int, default=True)
 
 
     #COLLECTOR ARGUMENTS
@@ -112,8 +112,8 @@ if __name__ == '__main__':
     train_seeds = [102]
     val_seeds = [102]
     
-    train_env = KolmogorovEnvironment22(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
-    test_env = KolmogorovEnvironment22(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    train_env = KolmogorovEnvironment22_new(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    test_env = KolmogorovEnvironment22_new(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
     train_env.seed(args.seed)
     test_env.seed(args.seed)
     #######################################################################################################
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
     project_name = os.getenv("WANDB_PROJECT", "repeat_experiments")
-    logger = WandbLogger2(config=args, train_interval=100, update_interval=10,
+    logger = WandbLogger(config=args, train_interval=100, update_interval=10,
                              test_interval=1, info_interval=1, project=project_name)
     writer = SummaryWriter(log_path)
     writer.add_text("args", str(args))
