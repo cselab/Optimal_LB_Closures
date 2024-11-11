@@ -142,7 +142,7 @@ def restrict_to_num_threads(num_threads: int):
 
 def model_name(config):
     # creates a name from the relevant hyperparameters
-    setup_name = f"{config.environment}_{config.algorithm}_cgs{config.cgs_resolution}_fgs{config.fgs_resolution}"
+    setup_name = f"{config.environment}_{config.setup}_{config.algorithm}"
     if not os.path.exists("dump/"+setup_name):
         os.makedirs("dump/"+setup_name)
 

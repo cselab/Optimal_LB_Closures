@@ -25,6 +25,7 @@ def get_args() -> argparse.Namespace:
 
     parser.add_argument("--algorithm", type=str, default="ppo")
     parser.add_argument("--environment", type=str, default="Kolmogorov")
+    parser.add_argument("--setup", type=str, default="glob") #options = "loc", "glob", "interp"
 
     parser.add_argument("--seed", type=int, default=0)
 
@@ -35,7 +36,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--max_interactions", type=int, default=10000) #1588 - 1
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
-    parser.add_argument("--num_agents", type=int, default=16)
+    parser.add_argument("--num_agents", type=int, default=1)
 
     #POLICY ARGUMENTS 
     parser.add_argument("--learning_rate", type=float, default=1e-4)
@@ -125,11 +126,20 @@ if __name__ == '__main__':
     #######################################################################################################
     assert train_env.observation_space.shape is not None  # for mypy
     assert train_env.action_space.shape is not None
-    #initialize PPO
-    #actor = local_actor_net(in_channels=6, device=device).to(device)
-    actor = FullyConvNet_interpolating_agents3(in_channels=6, N=args.num_agents, device=device).to(device)
-    critic = central_critic_net4(in_channels=6, device=device).to(device)
+    #initialize networks
+    if args.setup == "loc":
+        actor = local_actor_net(in_channels=6, device=device).to(device)
+        critic = central_critic_net2(in_channels=6, device=device).to(device)
+    elif args.setup == "glob":
+        actor = central_actor_net2(in_channels=6, device=device).to(device)
+        critic = central_critic_net2(in_channels=6, device=device).to(device)
+    elif args.setup == "interp":
+        actor = FullyConvNet_interpolating_agents3(in_channels=6, N=args.num_agents, device=device).to(device)
+        critic = central_critic_net4(in_channels=6, device=device).to(device)
+
     actor_critic = ActorCritic(actor=actor, critic=critic)
+
+
     optim = torch.optim.AdamW(actor_critic.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
 
@@ -177,7 +187,7 @@ if __name__ == '__main__':
     ####### Logger ########################################################################################
     #######################################################################################################
     log_path = os.path.join(args.logdir, args.task, "ppo")
-    project_name = os.getenv("WANDB_PROJECT", "repeat_experiments")
+    project_name = os.getenv("WANDB_PROJECT", "LBM_closure_discovery")
     logger = WandbLogger(config=args, train_interval=100, update_interval=10,
                              test_interval=1, info_interval=1, project=project_name)
     writer = SummaryWriter(log_path)
