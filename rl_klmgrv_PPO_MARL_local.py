@@ -112,8 +112,8 @@ if __name__ == '__main__':
     train_seeds = [102]
     val_seeds = [102]
     
-    train_env = KolmogorovEnvironment22(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
-    test_env = KolmogorovEnvironment22(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    train_env = KolmogorovEnvironment22_new(seeds=train_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
+    test_env = KolmogorovEnvironment22_new(seeds=val_seeds, max_episode_steps=args.max_interactions, step_factor=args.step_factor)
     train_env.seed(args.seed)
     test_env.seed(args.seed)
     #######################################################################################################

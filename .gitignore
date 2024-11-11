@@ -10,6 +10,8 @@
 /log/
 /gifs/
 /results/data/
-#/dump/
+/dump/
+!/dump/Kolmogorov22_ppo_cgs1_fgs16/
+
 
 *__pycache__/

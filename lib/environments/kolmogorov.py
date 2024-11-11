@@ -4825,78 +4825,16 @@ class KolmogorovEnvironment24_decaying(BaseEnvironment, ABC):
         return state, reward, terminated, truncated, {}
 
     def render(self, savefig=False):
+        return 0
 
-        v1 = vorticity_2d(self.u1, self.kwargs1["dx_eff"])
-        v2 = vorticity_2d(self.u2, self.kwargs2["dx_eff"])
-        magnitude = lambda u : np.sqrt(np.sum(u**2, axis=-1))
-        # Your plotting function
-        fig, axes = plt.subplots(2, 3, figsize=(15, 10))  # Create a 2x3 grid of subplots
-        # Plot CGS, FGS, and MSE fields in the first row
-        im1 = axes[0, 0].imshow(v1, vmin=-10, vmax=10, cmap=sn.cm.icefire)
-        im2 = axes[0, 1].imshow(v2, vmin=-10, vmax=10, cmap=sn.cm.icefire)
-        #plot enerty spectra
-        E1, E2 = self.get_spectra()
-        axes[0,2].loglog(E1, label="CGS")
-        axes[0,2].loglog(E2, label="FGS")
-        axes[0,2].loglog(self.means_dns, label="DNS")
-        axes[0,2].legend()
-        axes[0,2].set_title("Energy spectra")
-        axes[0,2].set_xlabel("wavenumber k")
-        axes[0,2].set_ylabel("Energy E(k)")   
-        # Plot velocity magnitude for CGS and FGS in the second row
-        im4 = axes[1, 0].imshow(magnitude(self.u1), cmap='plasma')
-        im5 = axes[1, 1].imshow(magnitude(self.u2), cmap='plasma')
-        #plot velocity MSE
-        im6 = axes[1, 2].imshow(np.sum((self.u1 - self.u2)**2, axis=-1), cmap='viridis')
-        # Hide axes for the third column of the second row (unused)
-        axes[1, 2].axis('off')
-        # Remove axis ticks for all subplots
-        for ax in axes.flat:
-            ax.axis('off')
-        axes[0,2].axis('on')
-        # Set titles for the subplots
-        axes[0, 0].set_title("Vorticity CGS")
-        axes[0, 1].set_title("Vorticity FGS")
-        axes[0, 2].set_title("Energy Spectrum")
-        axes[1, 0].set_title("Velocity Magnitude CGS")
-        axes[1, 1].set_title("Velocity Magnitude FGS")
-        axes[1, 2].set_title("Velocity MSE")
-        # Create a colorbar for the third plot (MSE)
-        divider = make_axes_locatable(axes[1, 2])
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im6, cax=cax)
-        # Create colorbars for velocity magnitude plots
-        divider_cgs = make_axes_locatable(axes[1, 0])
-        cax_cgs = divider_cgs.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im4, cax=cax_cgs)
-        divider_fgs = make_axes_locatable(axes[1, 1])
-        cax_fgs = divider_fgs.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im5, cax=cax_fgs)
-        # Show the plot
-        plt.tight_layout()
-        #if save_fig == True:
-        #    plt.savefig(f"visuals/img{i}.png", dpi=100)
-        #    plt.close()
-        #else:
-        #    plt.show()
-        plt.show()
-
-    
-    def _load_u2(self):
-        u2 = np.load(self.fgs_dump_path + f"velocity_klmgrv_s{self.sampled_seed}_{str(int(self.counter*self.factor)).zfill(6)}.npy")
-        return u2
     
     def get_vorticity(self):
         return vorticity_2d(self.u1, self.kwargs1["dx_eff"])
 
-    def get_spectra(self):
-        _, E1 = energy_spectrum_2d(self.u1)
-        _, E2 = energy_spectrum_2d(self.u2)
-        return E1, E2
 
     def E_loss(self, means_cgs, k):
         means_diff = np.log(means_cgs[1:]*k[1:]**5)/10 - self.means_dns
-        return 1 + np.log(np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff))/64
+        return 5 + np.log(np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff))/64
 
     def interpolate_actions(self, actions):
         dist = int(self.cgs.nx // self.N_agents)  # distance between agents
