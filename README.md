@@ -3,35 +3,11 @@
 ## Description
 This is the official PyTorch/tianshou implementation of the paper *Closure Discovery for Coarse Grained Partial Differential Equations using Multi-Agent Reinforcement Learning*.
 
-<p align="center">
-    <img src="./results/figures/CNN_MARL_graphic.drawio.png" alt="Visualization of the algorithm." width="480">
-</p>
-<p align="center">
-    <img src="./results/figures/advection/mnist_train_illustration.png" alt="Example graphic of a simulation" width="480">
-</p>
 
 This repository allows to train a multi-agent reinforcement learning (MARL) agents to discover a closure model for a multiscale system.
 As a result, the agents are able to improve the accuracy of a coarse-grained simulation (CGS) significantly.
 A qualitative example of the improvement is shown in the figure below. The CGS combined with the agents is referred to as CNN-MARL.
 
-<div align="center">
-    <table style="width: 100%;">
-      <tr>
-	<td style="width: 33%; text-align: center;">
-	  <p>CGS (Baseline)</p>
-	  <img src="./results/gifs/1_cgs.gif" width="64">
-	</td>
-	<td style="width: 33%; text-align: center;">
-	  <p>CNN-MARL</p>
-	  <img src="./results/gifs/1_cnn_marl.gif" width="64">
-	</td>
-	<td style="width: 33%; text-align: center;">
-	  <p>FGS (Ground Truth)</p>
-	  <img src="./results/gifs/1_fgs.gif" width="64">
-	</td>
-      </tr>
-    </table>
-</div>
 
 
 ## Getting Started

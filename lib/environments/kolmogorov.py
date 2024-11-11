@@ -19,9 +19,13 @@ from lib.environments.base import BaseEnvironment
 
 #temporary solution for xlb imports
 sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
-from my_flows.kolmogorov_2d import Kolmogorov_flow, Decaying_flow
-from my_flows.helpers import get_vorticity, get_velocity, get_kwargs4, get_moments, get_raw_moments
+#from my_flows.kolmogorov_2d import Kolmogorov_flow, Decaying_flow
+
 from src.utils import *
+
+
+from xlb_flows.utils import get_velocity, get_kwargs4, get_moments, get_raw_moments
+from xlb_flows.kolmogorov_2d import Kolmogorov_flow, Decaying_flow
 
 
 def jax2torch(x):

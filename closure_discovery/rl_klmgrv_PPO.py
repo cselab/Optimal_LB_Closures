@@ -4,6 +4,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import LambdaLR
 import os
+import sys
 from time import strftime
  
 from tianshou.data import Batch, Collector, VectorReplayBuffer
@@ -11,6 +12,7 @@ from tianshou.trainer import OnpolicyTrainer
 from tianshou.policy import PPOPolicy
 from tianshou.env import DummyVectorEnv
 
+sys.path.append(os.path.abspath(os.path.expanduser('~/CNN-MARL_closure_model_disovery')))
 from lib.environments import *
 from lib.utils import save_batch_to_file, model_name
 from lib.models import *
