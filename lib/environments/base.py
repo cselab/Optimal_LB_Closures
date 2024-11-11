@@ -1,11 +1,14 @@
 import gymnasium as gym
 #import wandb
 import numpy as np
+import scipy as scp
 from abc import ABC, abstractmethod
 import os
-#from tqdm import tqdm
-#from tianshou.data import Batch
+import sys
+from tianshou.data import Batch
 from gymnasium import spaces
+import wandb
+from tqdm import tqdm
 
 #temporary solution for xlb imports
 sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
@@ -28,27 +31,29 @@ class BaseEnvironment(ABC, gym.Env):
 
     def _get_info(self):
         return {}
-    
+
 
 # path to the initialization files
 INIT_PATH = os.path.expanduser("~/XLB/vel_init/")
 FGS_DATA_PATH = os.path.expanduser("~/XLB/fgs_data/")
 FGS_DATA_PATH_3 = os.path.expanduser("~/XLB/fgs3_data/")
-# path to energy spectra
+# path to energy dns energyp spectrum
 INIT_PATH_SPEC = os.path.expanduser("~/XLB/dns_spectrum/")
 
 
-# base KolmogorvEnvironment for energy spectrum lass
-class Base_KolmogorovEnvironment(BaseEnvironment, ABC):
+# base KolmogorvEnvironment for energy spectrum loss
+class KolmogorovEnvironment(BaseEnvironment, ABC):
     
-    def __init__(self, step_factor=1,
-                max_episode_steps=20000,
-                seed=102,
-                fgs_lamb=16,
-                cgs_lamb=1,
-                seeds=np.array([102]),
-                Re=10000,
-                flow="klmgrv"):
+    def __init__(self,
+                 step_factor=1,
+                 max_episode_steps=20000,
+                 seed=102,
+                 fgs_lamb=16,
+                 cgs_lamb=1,
+                 seeds=np.array([102]),
+                 Re=10000,
+                 N_agents=128,
+                 flow="Kolmogorov"):
         super().__init__()
 
         #for random initialization sample a seed from possible seeds
@@ -59,6 +64,9 @@ class Base_KolmogorovEnvironment(BaseEnvironment, ABC):
         self.flow = flow
         self.step_factor = step_factor
         self.counter = 0
+        self.N_agents = N_agents
+        self.N = (cgs_lamb*128)
+        self.cgs_lamb = cgs_lamb
         #CGS parameters
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" 
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" 
@@ -68,12 +76,17 @@ class Base_KolmogorovEnvironment(BaseEnvironment, ABC):
                                                     lamb=cgs_lamb,
                                                     Re=self.Re)
         #CGS
-        if self.flow == "klmgrv":
+        if self.flow == "Kolmogorov":
             self.cgs = Kolmogorov_flow(**self.kwargs1)
-        elif self.flow == "decay":
+        elif self.flow == "Decaying":
             self.cgs = Decaying_flow(**self.kwargs1)
         #state and action
-        self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
+        if self.N_agents == 1:
+            self.omg = np.copy(self.cgs.omega)
+            action_shape = (1,)
+        else:
+            self.omg = np.copy(self.cgs.omega*np.ones((self.N, self.N, 1)))
+            action_shape = (self.N_agents, self.N_agents)
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         #reward - enerty spectrum
@@ -87,14 +100,14 @@ class Base_KolmogorovEnvironment(BaseEnvironment, ABC):
         #Environment specifications
         self.observation_space = spaces.Box(low=-3,
                                             high=3,
-                                             shape=(self.cgs.nx, self.cgs.ny, 6),
+                                             shape=(self.N, self.N, 6),
                                              dtype=np.float64)
         self.action_space = spaces.Box(low=-0.005,
                                        high=0.005,
-                                       shape=(self.cgs.nx, self.cgs.ny),
+                                       shape=action_shape,
                                        dtype=np.float32)
         self.max_episode_steps = np.min([max_episode_steps, endTime1])
-        
+
 
     def seed(self, seed):
         np.random.seed(seed)
@@ -105,11 +118,14 @@ class Base_KolmogorovEnvironment(BaseEnvironment, ABC):
         self.sampled_seed = np.random.choice(self.possible_seeds) 
         self.kwargs1["u0_path"] = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy"
         self.kwargs1["rho0_path"] = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy"
-        if self.flow == "klmgrv":
+        if self.flow == "Kolmogorov":
             self.cgs = Kolmogorov_flow(**self.kwargs1)
-        elif self.flow == "decay":
+        elif self.flow == "Decaying":
             self.cgs = Decaying_flow(**self.kwargs1)
-        self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
+        if self.N_agents == 1:
+            self.omg = np.copy(self.cgs.omega)
+        else:
+            self.omg = np.copy(self.cgs.omega*np.ones((self.N, self.N, 1)))
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
@@ -117,7 +133,8 @@ class Base_KolmogorovEnvironment(BaseEnvironment, ABC):
     
     def step(self, action):
         #interpolate action
-        action = self.interpolate_actions(action)
+        if self.N_agents != 1 and self.N_agents != self.N:
+            action = self.interpolate_actions(action)
         #update relaxation rate of cgs
         self.cgs.omega = self.omg * (1+action.reshape(self.omg.shape))
         #perfrom #step_factor cgs steps for given action
@@ -127,7 +144,10 @@ class Base_KolmogorovEnvironment(BaseEnvironment, ABC):
         #compute state and reward
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
-        k, E1 = energy_spectrum_2d(self.u1)
+        if self.cgs_lamb > 1:
+            k, E1 = energy_spectrum_2d(downsample_field(self.u1, self.cgs_lamb))
+        else:
+            k, E1 = energy_spectrum_2d(self.u1)
         reward = self.E_loss(E1, k)
         terminated = False
         if np.any([np.any(self.f1 < 0),
@@ -146,8 +166,17 @@ class Base_KolmogorovEnvironment(BaseEnvironment, ABC):
         return vorticity_2d(self.u1, self.kwargs1["dx_eff"])
 
     def E_loss(self, means_cgs, k):
-        means_diff = np.log(means_cgs[1:]*k[1:]**5)/10 - self.means_dns
+        means_diff = (np.log(means_cgs[1:]*k[1:]**5)/10) - self.means_dns
+        print((-0.5 * means_diff.T @ self.cov_inverse @ means_diff))
         return 1 + np.log(np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff))/64
     
-    def interpolate_action(self, action):
-        return action
+    def interpolate_actions(self, actions):
+        dist = int(self.N // self.N_agents) #distance between agents
+        half_dist = int(dist//2)
+        actions = np.pad(actions, pad_width=1, mode='wrap')
+        actions = actions.flatten()
+        coord = np.array([(i*dist, j*dist) for i in range(self.N_agents+2) for j in range(self.N_agents+2)])
+        grid_x, grid_y = np.meshgrid(np.arange(self.cgs.nx+dist), np.arange(self.N+dist))
+        interpolated_actions = scp.interpolate.griddata(coord, actions, (grid_x, grid_y), method='cubic')
+        actual_actions = interpolated_actions[half_dist:(self.N+half_dist), half_dist:(self.N+half_dist)]
+        return actual_actions

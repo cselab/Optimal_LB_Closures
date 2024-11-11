@@ -39,6 +39,7 @@ FGS_DATA_PATH_3 = os.path.expanduser("~/XLB/fgs3_data/")
 INIT_PATH_SPEC = os.path.expanduser("~/XLB/dns_spectrum/")
 
 # Base environemnt with MSE reward between fgs and cgs
+"""
 class KolmogorovEnvironment18(BaseEnvironment, ABC):
     
     def __init__(self, step_factor=1, max_episode_steps=20000, seed=102, fgs_lamb=1, cgs_lamb=1, seeds=np.array([102]), Re=10000):
@@ -150,8 +151,9 @@ class KolmogorovEnvironment18(BaseEnvironment, ABC):
     
     def get_vorticity(self):
         return vorticity_2d(self.u1, self.kwargs1["dx_eff"])
+"""
 
-
+"""
 # adaption for centralized learning -> compute mean over returns
 class KolmogorovEnvironment19(BaseEnvironment, ABC):
     
@@ -268,8 +270,9 @@ class KolmogorovEnvironment19(BaseEnvironment, ABC):
     
     def get_vorticity(self):
         return vorticity_2d(self.u1, self.kwargs1["dx_eff"])
+"""
 
-
+"""
 # back to single actions
 class KolmogorovEnvironment20(BaseEnvironment, ABC):
     
@@ -414,6 +417,7 @@ class KolmogorovEnvironment20(BaseEnvironment, ABC):
         _, E1 = energy_spectrum_2d(self.u1)
         _, E2 = energy_spectrum_2d(self.u2)
         return E1, E2
+"""
 
 
 # move back to full MARL setup
@@ -434,7 +438,7 @@ class KolmogorovEnvironment22_global(BaseEnvironment, ABC):
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.omg = np.copy(self.cgs.omega)
-        self.cgs.omg = np.copy(self.omg)
+        #self.cgs.omg = np.copy(self.omg)
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         
@@ -473,18 +477,9 @@ class KolmogorovEnvironment22_global(BaseEnvironment, ABC):
         return state, {}
     
     def step(self, action):
-        if action.shape != self.action_space.shape:
-            try:
-                action = action.reshape(self.action_space.shape)
-            except:
-                print("action reshaping didn't work")
 
-        if (np.any(self.action_space.low > action) or np.any(action > self.action_space.high)):
-            print("WARNING: Action is not in action space")
-            action = np.clip(action, self.action_space.low, self.action_space.high)
-
-        #self.cgs.omega = np.copy(self.omg * (1+action.reshape(self.omg.shape)))
-        self.cgs.omega = np.copy(self.omg * (1+action))
+        #self.cgs.omega = self.omg * (1+action.reshape(self.omg.shape))
+        self.cgs.omega = self.omg * (1+action)
         for _ in range(self.step_factor):
             self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
             self.counter += 1
@@ -1933,6 +1928,7 @@ class KolmogorovEnvironment24(BaseEnvironment, ABC):
 
     def E_loss(self, means_cgs, k):
         means_diff = np.log(means_cgs[1:]*k[1:]**5)/10 - self.means_dns
+        print((-0.5 * means_diff.T @ self.cov_inverse @ means_diff))
         return 1 + np.log(np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff))/64
 
     def interpolate_actions(self, actions):
