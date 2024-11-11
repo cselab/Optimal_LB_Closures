@@ -12,7 +12,8 @@ from tianshou.trainer import OnpolicyTrainer
 from tianshou.policy import PPOPolicy
 from tianshou.env import DummyVectorEnv
 
-sys.path.append(os.path.abspath(os.path.expanduser('~/CNN-MARL_closure_model_disovery')))
+#sys.path.append(os.path.abspath(os.path.expanduser('~/CNN-MARL_closure_model_disovery')))
+#sys.path.append(os.path.abspath(os.path.expanduser('~/CNN-MARL_closure_model_disovery/XLB')))
 from lib.environments import *
 from lib.utils import save_batch_to_file, model_name
 from lib.models import *

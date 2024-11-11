@@ -6,7 +6,7 @@ from tqdm import tqdm
 #temporary solution for xlb imports
 sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
 from my_flows.kolmogorov_2d import Kolmogorov_flow, Kolmogorov_flow_KBC, Decaying_flow
-from my_flows.helpers import get_kwargs, get_vorticity, get_velocity, get_kwargs4, get_moments, get_raw_moments, update_macroscopic, momentum_flux, equilibrium
+from my_flows.helpers import get_kwargs, get_vorticity, get_velocity, get_kwargs4, get_moments, get_moments, update_macroscopic, momentum_flux, equilibrium
 from src.utils import *
 from src.lattice import LatticeD2Q9
 from lib.models import *

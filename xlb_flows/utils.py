@@ -9,10 +9,10 @@ from functools import partial
 import jax.numpy as jnp
 from jax import jit
 
-sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
-from src.utils import *
-from src.boundary_conditions import *
-from src.lattice import LatticeD2Q9
+
+from XLB.src.utils import *
+from XLB.src.boundary_conditions import *
+from XLB.src.lattice import LatticeD2Q9
 
 
 # creates kwargs for burn in simulation
@@ -44,8 +44,8 @@ def get_burn_in_kwargs(lamb=16,
     N_prints = m_prime//(lamb*64) # number of prints -> needs to be sufficiently large to produce smooth moovie
     endTime = int(np.ceil(m_prime))
     io_rate = endTime
-    print(f"m = {m}, m_prime = {m_prime},
-           end time = {endTime} steps, T={T},
+    print(f"m = {m}, m_prime = {m_prime},\
+            end time = {endTime} steps, T={T},\
              io_rate = {io_rate}, Number of outputs = {endTime//io_rate + 2}")
 
     coord = np.array([(i, j) for i in range(N) for j in range(N)])
@@ -250,6 +250,12 @@ def get_moments(f, sim):
         return rho, u, P_neq
 
 
+@partial(jit)
+def vorticity_2d(u, dx=1.0):
+    u_x_dy, u_y_dx = jnp.gradient(u[..., 0], dx, axis=1), jnp.gradient(u[..., 1], dx, axis=0)
+    return u_y_dx - u_x_dy
+
+
 @partial(jit, inline=True)
 def update_macroscopic(f, c):
     """
@@ -328,3 +334,57 @@ def equilibrium(rho, u, c, w):
     feq = rho * w * (1.0 + cu * (1.0 + 0.5 * cu) - usqr)
 
     return feq
+
+
+
+# computes energy spectrum of a 2d velocity field
+def energy_spectrum_2d(u):
+
+    n_x, n_y, _ = u.shape
+    nn = max(n_x,n_y)
+    uh = np.fft.ifft2(u[...,0],norm='backward')
+    vh = np.fft.ifft2(u[...,1], norm='backward')
+    uhat = np.stack([uh, vh], axis=-1)
+    E_k = np.sum(np.conj(uhat)*uhat, axis=-1).real/2.
+    freq = np.fft.fftfreq(nn, d=1/nn)
+    kx, ky = np.meshgrid(freq, freq)
+    knorm = np.sqrt(kx**2 + ky**2)
+    ks = np.arange(1,int(nn/2))
+    Ek = np.zeros(len(ks))
+    for i in range(0,int(nn/2)-1):
+        k = ks[i]
+        mask = (knorm > k-0.5) & (knorm <= k+0.5)
+        Ek[i] = np.mean(E_k[mask])
+
+    return ks, 2*np.pi*Ek
+
+
+
+@partial(jit, static_argnums=(1, 2))
+def downsample_vorticity(field, factor, method='bicubic'):
+    """
+    Downsample a JAX array by a factor of `factor` along each axis.
+
+    Parameters
+    ----------
+    field : jax.numpy.ndarray
+        The input vector field to be downsampled. This should be a 3D or 4D JAX array where the last dimension is 2 or 3 (vector components).
+    factor : int
+        The factor by which to downsample the field. The dimensions of the field will be divided by this factor.
+    method : str, optional
+        The method to use for downsampling. Default is 'bicubic'.
+
+    Returns
+    -------
+    jax.numpy.ndarray
+        The downsampled field.
+    """
+    if factor == 1:
+        return field
+    else:
+        new_shape = tuple(dim // factor for dim in field.shape)
+        downsampled_components = []
+        resized = resize(field, new_shape, method=method)
+        downsampled_components.append(resized)
+
+        return jnp.stack(downsampled_components, axis=-1)

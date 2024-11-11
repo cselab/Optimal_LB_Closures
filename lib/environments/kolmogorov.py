@@ -18,13 +18,12 @@ from gymnasium import spaces
 from lib.environments.base import BaseEnvironment
 
 #temporary solution for xlb imports
-sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
+#sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
 #from my_flows.kolmogorov_2d import Kolmogorov_flow, Decaying_flow
+#from src.utils import *
 
-from src.utils import *
-
-
-from xlb_flows.utils import get_velocity, get_kwargs4, get_moments, get_raw_moments
+from XLB.src.utils import *
+from xlb_flows.utils import *
 from xlb_flows.kolmogorov_2d import Kolmogorov_flow, Decaying_flow
 
 
@@ -146,10 +145,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         #compute state and reward
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
-        if self.cgs_lamb > 1:
-            k, E1 = energy_spectrum_2d(downsample_field(self.u1, self.cgs_lamb))
-        else:
-            k, E1 = energy_spectrum_2d(self.u1)
+        k, E1 = energy_spectrum_2d(downsample_field(self.u1, self.cgs_lamb))
         reward = self.E_loss(E1, k)
         terminated = False
         if np.any([np.any(self.f1 < 0),
@@ -912,7 +908,7 @@ class KolmogorovEnvironment22_global_higher(BaseEnvironment, ABC):
         self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.cgs.omega = np.copy(self.omg)
         self.f1 = self.cgs.assign_fields_sharded()
-        self.rho1, self.u1, self.P_neq1 = get_raw_moments(self.f1, self.cgs)
+        self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
 
         return state, {}
@@ -934,7 +930,7 @@ class KolmogorovEnvironment22_global_higher(BaseEnvironment, ABC):
             self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
             self.counter += 1
 
-        self.rho1, self.u1, self.P_neq1 = get_raw_moments(self.f1, self.cgs)
+        self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
         k, E1 = energy_spectrum_2d(downsample_field(self.u1, 2))
         reward = self.E_loss(E1, k)
@@ -1350,7 +1346,7 @@ class KolmogorovEnvironment22_higher(BaseEnvironment, ABC):
         self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.cgs.omega = np.copy(self.omg)
         self.f1 = self.cgs.assign_fields_sharded()
-        self.rho1, self.u1, self.P_neq1 = get_raw_moments(self.f1, self.cgs)
+        self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
 
         return state, {}
@@ -1371,7 +1367,7 @@ class KolmogorovEnvironment22_higher(BaseEnvironment, ABC):
             self.f1, _ = self.cgs.step(self.f1, self.counter, return_fpost=self.cgs.returnFpost)
             self.counter += 1
 
-        self.rho1, self.u1, self.P_neq1 = get_raw_moments(self.f1, self.cgs)
+        self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
         k, E1 = energy_spectrum_2d(downsample_field(self.u1, 2))
         reward = self.E_loss(E1, k)

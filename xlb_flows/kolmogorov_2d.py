@@ -5,15 +5,23 @@ import jax
 import numpy as np
 from termcolor import colored
 
-sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
-from src.utils import *
-from src.models import BGKSim, AdvectionDiffusionBGK
+#sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
+#from src.utils import *
+#from src.models import BGKSim, AdvectionDiffusionBGK
+
+from xlb_flows.utils import *
+from XLB.src.utils import *
+from XLB.src.models import BGKSim, AdvectionDiffusionBGK
 
 np.random.seed(42)
 jax.config.update('jax_enable_x64', True)
 
 
 class Kolmogorov_flow(BGKSim):
+
+    def show_simulation_parameters(self):
+        pass
+
     def __init__(self, **kwargs):
         self.u0_path = kwargs.get("u0_path")
         self.rho0_path = kwargs.get("rho0_path")
@@ -99,7 +107,6 @@ class Kolmogorov_flow(BGKSim):
         #save_npy(timestep, energy_spectrum, "spec_")
         """
         return 0
-
 
 
 class Decaying_flow(BGKSim):
