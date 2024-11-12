@@ -33,13 +33,13 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
 
     #ENVIRONMENT ARGUMENTS 
-    parser.add_argument("--step_factor", type=int, default=4)
+    parser.add_argument("--step_factor", type=int, default=8)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
     parser.add_argument("--max_interactions", type=int, default=10000) #1588 - 1
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
-    parser.add_argument("--num_agents", type=int, default=16)
+    parser.add_argument("--num_agents", type=int, default=8)
 
     #POLICY ARGUMENTS 
     parser.add_argument("--learning_rate", type=float, default=1e-4)
@@ -52,7 +52,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--value_clip", type=int, default=True)
     parser.add_argument("--action_scaling", type=int, default=True)
     parser.add_argument("--action_bound_method", type=str, default="clip")
-    parser.add_argument("--ent_coef", type=float, default=1e-4)
+    parser.add_argument("--ent_coef", type=float, default=0)
     parser.add_argument("--vf_coef", type=float, default=0.25)
     parser.add_argument("--clip_range", type=float, default=0.2)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)

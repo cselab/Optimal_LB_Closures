@@ -15,89 +15,16 @@ from XLB.src.boundary_conditions import *
 from XLB.src.lattice import LatticeD2Q9
 
 
-# creates kwargs for burn in simulation
-def get_burn_in_kwargs(lamb=16,
-                        desired_time=40,
-                        Re=1000, n=4,
-                        vel_ref=0.1*(1/np.sqrt(3)),
-                        seed=42):
-    
-    twopi = 2.0 * np.pi
-    N = int(128*lamb) # domain length in LB units
-    dx = twopi/N # space conversion factor 
-    dx_eff = twopi/128 # effective space conversion factor for the 128x128 simulation 
-    l = N/(twopi*n) # characteristic length in LB units
-    visc = vel_ref * l / Re # viscosity
-    omega = 1.0 / (3. * visc + 0.5) # relaxation rate
-    C_u = vel_ref/n # velocity transformation factor
-
-    # compute burn in time s.t. the simulation reaches the desired time
-    # and the outputs are always at the same timestep independent of the resolution
-    kappa = np.ceil(desired_time/(twopi*vel_ref))
-    actual_time = kappa*twopi*vel_ref 
-    m = N*actual_time*14/twopi # number of conventional time steps
-    tau = 14*C_u # time conversion factor
-    m_prime = m/tau # number of LB time steps
-    tc = vel_ref/l # time conversion factor for non-dimensional time
-
-    T = int(np.ceil(m_prime*tc)) # non-dimensional time
-    N_prints = m_prime//(lamb*64) # number of prints -> needs to be sufficiently large to produce smooth moovie
-    endTime = int(np.ceil(m_prime))
-    io_rate = endTime
-    print(f"m = {m}, m_prime = {m_prime},\
-            end time = {endTime} steps, T={T},\
-             io_rate = {io_rate}, Number of outputs = {endTime//io_rate + 2}")
-
-    coord = np.array([(i, j) for i in range(N) for j in range(N)])
-    xx, yy = coord[:, 0], coord[:, 1]
-    kx, ky = n * twopi / N, n * twopi / N
-    xx = xx.reshape((N,N)) * kx
-    yy = yy.reshape((N,N)) * ky
-    #force parameter
-    chi = C_u**2 * twopi/N
-    alpha = 0.1 * C_u * twopi/N
-    v_max = C_u * 7.0
-
-    precision = "f64/f64"
-    lattice = LatticeD2Q9(precision)
-    # definedirectory
-    checkpoint_dir = os.path.abspath("./checkpoints")
-    
-    kwargs = {
-    'lattice': lattice,
-    'omega': omega,
-    'nx': N,
-    'ny': N,
-    'nz': 0,
-    'precision': precision,
-    'io_rate': int(io_rate),
-    'print_info_rate': int(10*io_rate),
-    'checkpoint_rate': endTime,
-    'checkpoint_dir': checkpoint_dir,
-    'restore_checkpoint': False,
-    'C_u' : C_u,
-    'vel_ref' : vel_ref,
-    'chi' : chi,
-    'alpha' : alpha,
-    'yy' : yy,
-    'dx_eff': dx_eff,
-    'v_max': v_max,
-    'seed': seed,
-    }
-
-    return kwargs, endTime, T, N
-
-
-
 #create kwargs for dataset creating e.g. for supervised learning
-def get_kwargs4(u0_path,
+def get_kwargs(u0_path,
                 rho0_path,
                 T_wish=18,
                 lamb=1,
                 Re=1000,
                 n=4,
                 upsilon=1,
-                seed=42):
+                seed=42,
+                print_rate=32):
 
     twopi = 2.0 * np.pi
     vel_ref= upsilon*0.1*(1/np.sqrt(3))
@@ -110,8 +37,11 @@ def get_kwargs4(u0_path,
     kappa = np.ceil(T_wish*l/(lamb*vel_ref))
     T = kappa * (lamb*vel_ref/l)
     m_prime = kappa * lamb
+
     endTime = int(np.ceil(m_prime))
-    io_rate = lamb
+    N_prints = m_prime//(lamb*print_rate)  #print factor for superviese = 1
+    io_rate = m_prime / N_prints
+
     print(rf"Re={Re}, m_prime={endTime}, T={T}, omega={omega}")
     coord = np.array([(i, j) for i in range(N) for j in range(N)])
     xx, yy = coord[:, 0], coord[:, 1]
@@ -121,7 +51,7 @@ def get_kwargs4(u0_path,
     #force parameter
     chi = C_u**2 * twopi/N
     alpha = 0.1 * C_u * twopi/N
-    #v_max = C_u * 7.0
+    v_max = C_u * 7.0
     precision = "f64/f64"
     lattice = LatticeD2Q9(precision)
     
@@ -146,76 +76,13 @@ def get_kwargs4(u0_path,
     'alpha' : alpha,
     'yy' : yy,
     'dx_eff': dx_eff,
-    'seed': seed
+    'v_max': v_max,
+    'seed': seed,
+    'endTime': endTime,
     }
     
     return kwargs, endTime, T, N
 
-
-#less io prints so used for evaluation and visualization
-def get_kwargs5(u0_path,
-                rho0_path,
-                T_wish=18,
-                lamb=1,
-                Re=1000,
-                n=4,
-                upsilon=1,
-                seed=42):
-
-    twopi = 2.0 * np.pi
-    vel_ref= upsilon*0.1*(1/np.sqrt(3))
-    N = int(128*lamb) # domain length in LB units
-    dx_eff = twopi/128 # effective space conversion factor, used in vorticity computation which is always performed on the downsampled field
-    l = N/(twopi*n) # characteristic length in LB units
-    visc = vel_ref * l / Re # viscosity
-    omega = 1.0 / (3. * visc + 0.5) # relaxation rate
-    C_u = vel_ref/n # velocity transformation factor
-    kappa = np.ceil(T_wish*l/(lamb*vel_ref))
-    T = kappa * (lamb*vel_ref/l)
-    m_prime = kappa * lamb
-    endTime = int(np.ceil(m_prime))
-    N_prints = m_prime//(lamb*32)  #N_prints = m_prime//(lamb*8)
-    io_rate = m_prime / N_prints
-    print(rf"Re={Re}, m_prime={endTime}, T={T}, omega={omega}, N_prints={N_prints}, io_rate={io_rate}")
-    coord = np.array([(i, j) for i in range(N) for j in range(N)])
-    xx, yy = coord[:, 0], coord[:, 1]
-    kx, ky = n * twopi / N, n * twopi / N
-    xx = xx.reshape((N,N)) * kx
-    yy = yy.reshape((N,N)) * ky
-    #force parameter
-    chi = C_u**2 * twopi/N
-    alpha = 0.1 * C_u * twopi/N
-    #v_max = C_u * 7.0
-
-    precision = "f64/f64"
-    lattice = LatticeD2Q9(precision)
-    
-    kwargs = {
-    'lattice': lattice,
-    'omega': omega,
-    'nx': N,
-    'ny': N,
-    'nz': 0,
-    'precision': precision,
-    'io_rate': int(io_rate),
-    'print_info_rate': int(10*io_rate),
-    'downsampling_factor': lamb,
-    #'checkpoint_rate': endTime,
-    #'checkpoint_dir': checkpoint_dir,
-    #'restore_checkpoint': False,
-    'u0_path' : u0_path,
-    'rho0_path' : rho0_path,
-    'C_u' : C_u,
-    'vel_ref' : vel_ref,
-    'chi' : chi,
-    'alpha' : alpha,
-    'xx' : xx,
-    'yy' : yy,
-    'dx_eff': dx_eff,
-    'seed': seed
-    }
-    
-    return kwargs, endTime, T, N
 
 
 def get_velocity(f, sim):
@@ -388,3 +255,60 @@ def downsample_vorticity(field, factor, method='bicubic'):
         downsampled_components.append(resized)
 
         return jnp.stack(downsampled_components, axis=-1)
+
+
+def save_image(timestep, fld, prefix=None, scale=None, show_time=False, tc = 1.0):
+    """
+    Save an image of a field at a given timestep.
+
+    Parameters
+    ----------
+    timestep : int
+        The timestep at which the field is being saved.
+    fld : jax.numpy.ndarray
+        The field to be saved. This should be a 2D or 3D JAX array. If the field is 3D, the magnitude of the field will be calculated and saved.
+    prefix : str, optional
+        A prefix to be added to the filename. The filename will be the name of the main script file by default.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    This function saves the field as an image in the PNG format. The filename is based on the name of the main script file, the provided prefix, and the timestep number.
+    If the field is 3D, the magnitude of the field is calculated and saved. The image is saved with the 'nipy_spectral' colormap and the origin set to 'lower'.
+    """
+    #fname = os.path.basename(__main__.__file__)
+    script_filename = 'klmgrv.py'
+    fname = os.path.basename(script_filename)
+    fname = os.path.splitext(fname)[0]
+    if prefix is not None:
+        fname = prefix + fname
+    fname = fname + "_" + str(timestep).zfill(6)
+
+    if len(fld.shape) > 3:
+        raise ValueError("The input field should be 2D!")
+    elif len(fld.shape) == 3:
+        fld = np.sqrt(fld[..., 0] ** 2 + fld[..., 1] ** 2)
+
+    plt.clf()
+    #plt.imsave(fname + '.png', fld.T, cmap=cm.jet, vmin=-0.001, vmax=0.001, origin='lower')
+    if scale is None:
+        plt.imsave(fname + '.png', fld.T, cmap=seaborn.cm.icefire, vmin=-10, vmax=10, origin='lower')
+        #plt.imsave(fname + '.png', fld.T, cmap=seaborn.cm.icefire, origin='lower')
+    else:
+        
+        if show_time == True:
+            # translate timestep to non-dimensional time
+            non_dim_time = int(round(timestep * tc,0))
+            fig, ax = plt.subplots()
+            im = ax.imshow(fld.T, cmap=seaborn.cm.icefire, vmin=-scale, vmax=scale, origin='lower')
+            bbox_props = dict(boxstyle="round,pad=0.3", edgecolor="none", facecolor="black", alpha=0.7)
+            ax.text(0.1, 0.1, f"T = {non_dim_time}", ha='left', va='bottom', fontsize=33, color='white', weight='bold', bbox=bbox_props, transform=ax.transAxes)
+            ax.axis('off')
+            plt.savefig(fname+'.png', bbox_inches='tight', pad_inches= 0., transparent=True)
+            plt.close()
+        
+        else:
+            plt.imsave(fname + '.png', fld.T, cmap=seaborn.cm.icefire, vmin=-scale, vmax=scale, origin='lower')

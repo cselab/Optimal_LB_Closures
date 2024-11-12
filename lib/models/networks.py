@@ -872,21 +872,21 @@ class FullyConvNet_interpolating_agents3(nn.Module):
 
         layers = []
         # convolutional filter
-        layers.append(nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=k, stride=k-1, padding=1, padding_mode=padding_mode))
+        layers.append(nn.Conv2d(in_channels=in_channels, out_channels=128, kernel_size=k, stride=k-1, padding=1, padding_mode=padding_mode))
         layers.append(nn.ELU())
 
         # Second convolutional
-        layers.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=1, stride=1, padding=0)) 
+        layers.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=1, stride=1, padding=0)) 
         layers.append(nn.ELU())
         
         # Third block
-        layers.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=1, stride=1, padding=0))
+        layers.append(nn.Conv2d(in_channels=256, out_channels=128, kernel_size=1, stride=1, padding=0))
         layers.append(nn.ELU())
 
         self.model = nn.Sequential(*layers)
 
         self.mu = nn.Sequential(nn.Conv2d(in_channels=128, out_channels=1, kernel_size=1, stride=1, padding=0, bias=True),
-                            #nn.Tanh()
+                            nn.Tanh()
         )
         self.sigma = nn.Sequential(nn.Conv2d(in_channels=128, out_channels=1, kernel_size=1, stride=1,padding=0, bias=True),
                             nn.Softplus()

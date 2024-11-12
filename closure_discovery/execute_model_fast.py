@@ -6,7 +6,7 @@ from tqdm import tqdm
 #temporary solution for xlb imports
 sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
 from my_flows.kolmogorov_2d import Kolmogorov_flow, Kolmogorov_flow_KBC, Decaying_flow
-from my_flows.helpers import get_kwargs, get_vorticity, get_velocity, get_kwargs4, get_moments, get_moments, update_macroscopic, momentum_flux, equilibrium
+from my_flows.helpers import get_kwargs, get_vorticity, get_velocity, get_kwargs, get_moments, get_moments, update_macroscopic, momentum_flux, equilibrium
 from src.utils import *
 from src.lattice import LatticeD2Q9
 from lib.models import *
@@ -69,7 +69,7 @@ class execute_model():
         self.w = jnp.array(lattice.w, dtype=jnp.float64)
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{sampled_seed}.npy" #2048x2048 simulation
-        kwargs1, self.endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=Re) #cgs
+        kwargs1, self.endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=Re) #cgs
         self.cgs = Kolmogorov_flow(**kwargs1)
         self.omg = jnp.array(self.cgs.omega, copy=True)
         self.f1 = self.cgs.assign_fields_sharded()

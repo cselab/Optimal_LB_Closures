@@ -71,7 +71,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         #CGS parameters
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" 
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" 
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path,
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path,
                                                     rho0_path=rho0_path,
                                                     T_wish=227,
                                                     lamb=cgs_lamb,
@@ -192,8 +192,8 @@ class KolmogorovEnvironment18(BaseEnvironment, ABC):
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         self.fgs_dump_path = FGS_DATA_PATH_3 + f"re{self.Re}_T227_N2048_S{self.sampled_seed}_U1_dump/"
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
-        self.kwargs2, _, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
@@ -307,8 +307,8 @@ class KolmogorovEnvironment19(BaseEnvironment, ABC):
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         self.fgs_dump_path = FGS_DATA_PATH_3 + f"re{self.Re}_T227_N{int(self.fgs_lamb*128)}_S{self.sampled_seed}_U1_dump/"
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
-        self.kwargs2, _, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
@@ -423,8 +423,8 @@ class KolmogorovEnvironment20(BaseEnvironment, ABC):
         self.fgs_lamb = fgs_lamb
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
-        self.kwargs2, _, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.omg = np.copy(self.cgs.omega)
@@ -569,7 +569,7 @@ class KolmogorovEnvironment22_global(BaseEnvironment, ABC):
 
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
 
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
@@ -715,7 +715,7 @@ class KolmogorovEnvironment22_global_decay(BaseEnvironment, ABC):
 
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
 
         #CGS
         self.cgs = Decaying_flow(**self.kwargs1)
@@ -870,7 +870,7 @@ class KolmogorovEnvironment22_global_higher(BaseEnvironment, ABC):
 
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
 
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
@@ -1025,7 +1025,7 @@ class KolmogorovEnvironment22_old(BaseEnvironment, ABC):
 
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
 
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
@@ -1134,7 +1134,7 @@ class KolmogorovEnvironment22_new(BaseEnvironment, ABC):
 
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
 
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
@@ -1303,7 +1303,7 @@ class KolmogorovEnvironment22_higher(BaseEnvironment, ABC):
 
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
 
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
@@ -1468,7 +1468,7 @@ class KolmogorovEnvironment22_decay(BaseEnvironment, ABC):
 
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
         
         #CGS
         self.cgs = Decaying_flow(**self.kwargs1)
@@ -1638,8 +1638,8 @@ class KolmogorovEnvironment22_visual(BaseEnvironment, ABC):
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         self.fgs_dump_path = FGS_DATA_PATH_3 + f"re{self.Re}_T227_N{int(self.fgs_lamb*128)}_S{self.sampled_seed}_U1_dump/"
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
-        self.kwargs2, _, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
 
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
@@ -1812,8 +1812,8 @@ class KolmogorovEnvironment23(BaseEnvironment, ABC):
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         self.fgs_dump_path = FGS_DATA_PATH_3 + f"re{self.Re}_T227_N{int(self.fgs_lamb*128)}_S{self.sampled_seed}_U1_dump/"
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
-        self.kwargs2, _, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs2, _, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=fgs_lamb, Re=self.Re) #fgs
 
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
@@ -1987,7 +1987,7 @@ class KolmogorovEnvironment24(BaseEnvironment, ABC):
         self.N_agents = N_agents
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
         #CGS
         self.cgs = Kolmogorov_flow(**self.kwargs1)
         self.omg = np.copy(self.cgs.omega*np.ones((self.cgs.nx, self.cgs.ny, 1)))
@@ -2083,7 +2083,7 @@ class KolmogorovEnvironment24_decaying(BaseEnvironment, ABC):
 
         u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
         rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" #2048x2048 simulation
-        self.kwargs1, endTime1, _, _ = get_kwargs4(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
+        self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path, rho0_path=rho0_path, T_wish=227, lamb=cgs_lamb, Re=self.Re) #cgs
 
         #CGS
         self.cgs = Decaying_flow(**self.kwargs1)
