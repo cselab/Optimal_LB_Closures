@@ -312,3 +312,10 @@ def save_image(timestep, fld, prefix=None, scale=None, show_time=False, tc = 1.0
         
         else:
             plt.imsave(fname + '.png', fld.T, cmap=seaborn.cm.icefire, vmin=-scale, vmax=scale, origin='lower')
+
+
+def create_and_navigate_to(folder_name):
+    # Create and navigate to folder_name
+    os.makedirs(folder_name, exist_ok=True)
+    with os.scandir(folder_name):
+        os.chdir(folder_name)

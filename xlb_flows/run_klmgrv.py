@@ -8,11 +8,20 @@ import argparse
 from XLB.src.utils import *
 from XLB.src.lattice import LatticeD2Q9
 from xlb_flows.utils import *
-from xlb_flows.kolmogorov_2d import Kolmogorov_flow, Decaying_flow, Burn_in_Kolmogorov_flow
+from xlb_flows.kolmogorov_2d import *
+
+from XLB.my_flows.helpers import get_burn_in_kwargs
 
 np.random.seed(42)
 jax.config.update('jax_enable_x64', True)
 
+flow_classes = {
+    "Kolmogorov": Kolmogorov_flow,
+    "Decaying": Decaying_flow,
+    "Burn_in": Burn_in_Kolmogorov_flow,
+    "Kolmogorov_KBC": Kolmogorov_flow_KBC,
+    "Decaying_KBC": Decaying_flow_KBC
+}
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -23,7 +32,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--lamb", type=int, default=1) #scales spacial resolution
     parser.add_argument("--t_wish", type=int, default=18) # or 227 for visualization
     parser.add_argument("--print_rate", type=int, default=32) # take 1 for dataset creation
-    parser.add_argument("--flow", type=str, default="Kolmogorov") #opitons "Kolmogorov", "Decaying", "Burn_in"
+    parser.add_argument("--flow", type=str, default="Kolmogorov") 
 
     return parser.parse_known_args()[0]
 
@@ -56,30 +65,30 @@ if __name__ == "__main__":
                                        seed=seed,
                                        print_rate=args.print_rate)
 
-    # run the simulation
-    if args.flow == "Kolmogorov":
-        sim = Kolmogorov_flow(**kwargs)
-    elif args.flow == "Decaying":
-        sim = Decaying_flow(**kwargs)
-    elif args.flow == "Burn_in":
-        sim = Burn_in_Kolmogorov_flow(**kwargs)
+    # Retrieve the class based on args.flow
+    flow_class = flow_classes.get(args.flow)
+
+    # Check if the flow exists and create an instance
+    if flow_class:
+        sim = flow_class(**kwargs)
     else:
         print("flow does not exist")
 
+    if args.flow == "Burn_in":
+        create_and_navigate_to("init_fields")
+    
+    else:
+        # Define folder paths
+        main_folder = f"re{int(Re)}_T{int(T)}_S{seed}_runs"
+        run_folder = f"re{int(Re)}_T{int(T)}_N{int(N)}_S{seed}_U{upsi}_{args.flow}"
 
-     # if the folder f"re{int(Re)}_dump" exitst delete it recursively
-    if not os.path.exists(f"re{int(Re)}_T{int(T)}_N{int(N)}_S{seed}_U{upsi}_dump"):
-        os.makedirs(f"re{int(Re)}_T{int(T)}_N{int(N)}_S{seed}_U{upsi}_dump")
-    os.chdir(f"re{int(Re)}_T{int(T)}_N{int(N)}_S{seed}_U{upsi}_dump")
-    # remove all .png files in the current directory
-    if not sim.restore_checkpoint:
-        os.system("rm -rf ./*.png")
-        os.system("rm -rf ./*.npy")
-        os.system("rm -rf ./*.json")
+        create_and_navigate_to(main_folder)
+        create_and_navigate_to(run_folder)
 
-    if sim.restore_checkpoint:
-        sim.kin_list = [] # list that stores kinetic energy values 
-        sim.ens_list = [] # list that stores enstrophy values
-        sim.scale = None
+        # remove all .png files in the current directory
+        if not sim.restore_checkpoint:
+            os.system("rm -rf ./*.png")
+            os.system("rm -rf ./*.npy")
+            os.system("rm -rf ./*.json")
 
     sim.run(endTime)

@@ -13,6 +13,7 @@
 /dump/
 !/dump/Kolmogorov22_ppo_cgs1_fgs16/
 /XLB/
+/storage/
 
 
 *__pycache__/

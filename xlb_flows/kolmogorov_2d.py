@@ -5,14 +5,9 @@ import jax
 import numpy as np
 import jax_cfd.base as cfd
 from jax import tree_util
-
-#sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
-#from src.utils import *
-#from src.models import BGKSim, AdvectionDiffusionBGK
-
 from xlb_flows.utils import *
 from XLB.src.utils import *
-from XLB.src.models import BGKSim, AdvectionDiffusionBGK
+from XLB.src.models import BGKSim, KBCSim, AdvectionDiffusionBGK
 
 np.random.seed(42)
 jax.config.update('jax_enable_x64', True)
@@ -170,3 +165,15 @@ class Burn_in_Kolmogorov_flow(Kolmogorov_flow):
             fname = fname + "_" + str(timestep).zfill(6)
             fname = fname + "_" + f"s{self.seed}"
             np.save(fname, rho)
+
+
+# Create Kolmogorov_flow_KBC by inheriting from Kolmogorov_flow and KBCSim
+class Kolmogorov_flow_KBC(KBCSim, Kolmogorov_flow):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+# Create Kolmogorov_flow_KBC by inheriting from Kolmogorov_flow and KBCSim
+class Decaying_flow_KBC(KBCSim, Decaying_flow):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
