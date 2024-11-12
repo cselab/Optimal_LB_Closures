@@ -39,7 +39,9 @@ def get_kwargs(u0_path,
     m_prime = kappa * lamb
 
     endTime = int(np.ceil(m_prime))
-    N_prints = m_prime//(lamb*print_rate)  #print factor for superviese = 1
+    #N_prints = m_prime//(lamb*print_rate)  #print factor for superviese = 1
+    #TODO: rmove this again
+    N_prints=1
     io_rate = m_prime / N_prints
 
     print(rf"Re={Re}, m_prime={endTime}, T={T}, omega={omega}")

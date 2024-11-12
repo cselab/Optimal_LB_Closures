@@ -1,6 +1,4 @@
 import os
-import sys
-import json
 import jax
 import numpy as np
 import argparse
@@ -10,7 +8,7 @@ from XLB.src.lattice import LatticeD2Q9
 from xlb_flows.utils import *
 from xlb_flows.kolmogorov_2d import *
 
-from XLB.my_flows.helpers import get_burn_in_kwargs
+import time
 
 np.random.seed(42)
 jax.config.update('jax_enable_x64', True)
@@ -79,7 +77,7 @@ if __name__ == "__main__":
     
     else:
         # Define folder paths
-        main_folder = f"re{int(Re)}_T{int(T)}_S{seed}_runs"
+        main_folder = f"../results/re{int(Re)}_T{int(T)}_S{seed}_runs"
         run_folder = f"re{int(Re)}_T{int(T)}_N{int(N)}_S{seed}_U{upsi}_{args.flow}"
 
         create_and_navigate_to(main_folder)
@@ -91,4 +89,8 @@ if __name__ == "__main__":
             os.system("rm -rf ./*.npy")
             os.system("rm -rf ./*.json")
 
+    start_time=time.time()
     sim.run(endTime)
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time} seconds")
