@@ -38,9 +38,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--t_wish", type=int, default=18) # or 227 for visualization
     parser.add_argument("--print_rate", type=int, default=32) # take 1 for dataset creation
     parser.add_argument("--flow", type=str, default="Kolmogorov_ClosureRL") 
+    parser.add_argument("--measure_speedup", type=int, default=False)
 
     return parser.parse_known_args()[0]
-
 
 
 class LocalActorNetFast(nn.Module):
@@ -143,7 +143,8 @@ if __name__ == "__main__":
                                        Re=Re, n=4,
                                        upsilon=upsi,
                                        seed=seed,
-                                       print_rate=args.print_rate)
+                                       print_rate=args.print_rate,
+                                       measure_speedup=args.measure_speedup)
 
     # Retrieve the class based on args.flow
     flow_class = flow_classes.get(args.flow)
@@ -196,4 +197,4 @@ if __name__ == "__main__":
     sim.run(endTime)
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"Execution time: {execution_time} seconds")
+    print(f"Execution time: {execution_time}")

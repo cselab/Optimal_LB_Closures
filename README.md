@@ -11,6 +11,23 @@ A qualitative example of the improvement is shown in the figure below. The CGS c
 
 
 ## Getting Started
+
+## Setup 
+### 1. Burn in simulation
+A burn in simulation is used to statistically stabalize the Kolmogorov flow. Run:
+```
+python xlb_flows/run_burn_in.py
+```
+to run a XLB simulaton for of the 2d Kolmogorov flow for $T=645$ at resolution $N=2048$ for seeds $s \in \{102, 99, 33\}$. The final density and velocity fields are used to initialize all future kolmgorov flows.
+
+### 2. Create references for testing
+To create all the reference solutions used for testing the ClosureRL models, run:
+```
+python xlb_flows/create_reference_runs.py
+```
+ Namely it runs a BGK and a KBC simulation at the same resolution as the ClosureRL model, a BGK at twice the resolution, and a BGK simulation at DNS resolution $N=2048$. This is done for all 3 test cases: Kolmogorov flow at $Re=10^4$ and $Re=10^5$ and a Decaying flow at $10^4$. All simulations run for $T=227$, and the velocity filed is saved every $32$ steps for the CGS resolution.
+
+
 ### Model Training
 Run the `rl_train.py` script to train a model. The script takes arguments to specify the model, environment, data, and training parameters.
 

@@ -31,6 +31,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--t_wish", type=int, default=18) # non-dimensional time
     parser.add_argument("--print_rate", type=int, default=32) # take 1 for dataset creation
     parser.add_argument("--flow", type=str, default="Kolmogorov") 
+    parser.add_argument("--measure_speedup", type=int, default=False)
 
     return parser.parse_known_args()[0]
 
@@ -73,7 +74,7 @@ if __name__ == "__main__":
                                        upsilon=upsi,
                                        seed=seed,
                                        print_rate=args.print_rate,
-                                       measure_speedup=False)
+                                       measure_speedup=args.measure_speedup)
     
     #correct downsampling & info prints for burn in simulation
     if args.flow == "Burn_in":
@@ -109,4 +110,4 @@ if __name__ == "__main__":
     sim.run(endTime)
     end_time = time.time()
     execution_time = end_time - start_time
-    print(f"Execution time: {execution_time} seconds")
+    print(f"Execution time: {execution_time}")
