@@ -28,7 +28,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--Re", type=int, default=1e4)
     parser.add_argument("--upsilon", type=int, default=1) #scales non-dim velocity    
     parser.add_argument("--lamb", type=int, default=1) #scales spacial resolution
-    parser.add_argument("--t_wish", type=int, default=18) # or 227 for visualization
+    parser.add_argument("--t_wish", type=int, default=18) # non-dimensional time
     parser.add_argument("--print_rate", type=int, default=32) # take 1 for dataset creation
     parser.add_argument("--flow", type=str, default="Kolmogorov") 
 
@@ -40,32 +40,23 @@ if __name__ == "__main__":
     args = get_args()
     print(args)
 
-    u0_path = os.path.expanduser(
-        f"~/CNN-MARL_closure_model_dicovery/xlb_flows/init_fields/"
-        f"velocity_kolmogorov_2d_910368_s{args.seed}.npy"
-        )
-
-    print(u0_path)
-
     try:
-        # File paths
         u0_path = os.path.expanduser(
-            f"~/CNN-MARL_closure_model_dicovery/xlb_flows/init_fields/"
-            f"velocity_kolmogorov_2d_910368_s{args.seed}.npy"
-        )
+            f"~/XLB/vel_init/velocity_burn_in_909313_s{args.seed}.npy"
+            )
         rho0_path = os.path.expanduser(
-            f"~/CNN-MARL_closure_model_dicovery/xlb_flows/init_fields/"
-            f"density_kolmogorov_2d_910368_s{args.seed}.npy"
-        )
-        
-        # Verify file existence
-        if not os.path.exists(u0_path):
-            print(f"File not found: {u0_path}")
-        if not os.path.exists(rho0_path):
-            print(f"File not found: {rho0_path}")
-    
-    except Exception as e:
-        print(f"An error occurred: {e}")
+            f"~/XLB/vel_init/density_burn_in_909313_s{args.seed}.npy"
+            )
+        #u0_path = os.path.expanduser(
+        #    f"~/CNN-MARL_closure_model_discovery/xlb_flows/init_fields/"
+        #    f"velocity_kolmogorov_2d_910368_s{args.seed}.npy"
+        #)
+        #rho0_path = os.path.expanduser(
+        #    f"~/CNN-MARL_closure_model_discovery/xlb_flows/init_fields/"
+        #    f"density_kolmogorov_2d_910368_s{args.seed}.npy"
+        #)
+    except:
+        print(f"no file found for given seed = {args.seed}")
 
 
     precision = "f64/f64"
@@ -81,7 +72,12 @@ if __name__ == "__main__":
                                        Re=Re, n=4,
                                        upsilon=upsi,
                                        seed=seed,
-                                       print_rate=args.print_rate)
+                                       print_rate=args.print_rate,
+                                       measure_speedup=False)
+    
+    #correct downsampling & info prints for burn in simulation
+    if args.flow == "Burn_in":
+        kwargs["downsampling_factor"] = 1
 
     # Retrieve the class based on args.flow
     flow_class = flow_classes.get(args.flow)

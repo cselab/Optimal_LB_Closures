@@ -24,7 +24,8 @@ def get_kwargs(u0_path,
                 n=4,
                 upsilon=1,
                 seed=42,
-                print_rate=32):
+                print_rate=32,
+                measure_speedup=False):
 
     twopi = 2.0 * np.pi
     vel_ref= upsilon*0.1*(1/np.sqrt(3))
@@ -39,9 +40,10 @@ def get_kwargs(u0_path,
     m_prime = kappa * lamb
 
     endTime = int(np.ceil(m_prime))
-    #N_prints = m_prime//(lamb*print_rate)  #print factor for superviese = 1
-    #TODO: rmove this again
-    N_prints=1
+    if measure_speedup:
+         N_prints=1
+    else:
+        N_prints = m_prime//(lamb*print_rate)  #print factor for superviese = 1
     io_rate = m_prime / N_prints
 
     print(rf"Re={Re}, m_prime={endTime}, T={T}, omega={omega}")

@@ -143,14 +143,6 @@ class Burn_in_Kolmogorov_flow(Kolmogorov_flow):
         rho = np.array(kwargs["rho"])
         timestep = kwargs["timestep"]
 
-        if timestep == 0:
-            self.kin_list = [] # list that stores kinetic energy values 
-            self.ens_list = [] # list that stores enstrophy values
-            self.diss_list = [] # list that stores dissipation values
-            self.ein_list = [] # list that stores energy injection values
-            v = vorticity_2d(u, self.dx_eff)
-            self.scale = np.max(np.abs(v)) * 0.4
-
         if timestep == self.endTime:
             #save u as npy
             fname = os.path.basename(__file__)
