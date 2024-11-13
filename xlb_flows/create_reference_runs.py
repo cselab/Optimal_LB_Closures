@@ -21,7 +21,7 @@ flow_configs = [
 def execute_command(flow, Re, lamb, model, T, seed, device):
     flow_model = f"{flow}_{model}"
     command = (
-        f'CUDA_VISIBLE_DEVICES={device} PYTHONPATH=.:./XLB python xlb_flows/run_klmgrv.py'
+        f'CUDA_VISIBLE_DEVICES={device} PYTHONPATH=..:../XLB python xlb_flows/run_klmgrv.py'
         f'--t_wish {T} --lamb {lamb} --seed {seed} --flow {flow_model} --Re {Re}'
     )
     print(f"Executing: {command}")

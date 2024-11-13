@@ -32,6 +32,18 @@ class Kolmogorov_flow(BGKSim):
         self.dx_eff = kwargs.get("dx_eff")
         super().__init__(**kwargs)
 
+    @property
+    def omega(self):
+        return self._omega
+
+    @omega.setter
+    def omega(self, value):
+        if value is None:
+            raise ValueError("omega must be provided")
+        #if not isinstance(value, float):
+        #    raise TypeError("omega must be a float")
+        self._omega = value
+
         
     def set_boundary_conditions(self):
         # no boundary conditions implying periodic BC in all directions

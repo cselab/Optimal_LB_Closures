@@ -17,7 +17,7 @@ from tianshou.env import DummyVectorEnv
 from lib.environments import *
 from lib.utils import save_batch_to_file, model_name
 from lib.models import *
-from lib.custom_tianshou.my_logger import WandbLogger
+from lib.wandb_logger.cutom_logger import WandbLogger
 import wandb
 wandb.require("core")
 device = "cuda" if torch.cuda.is_available() else "cpu"

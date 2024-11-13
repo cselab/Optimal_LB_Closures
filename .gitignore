@@ -9,12 +9,16 @@
 /sweep_configs/
 /log/
 /gifs/
-/results/data/
+/results/
 /dump/
 !/dump/Kolmogorov22_ppo_cgs1_fgs16/
 /XLB/
 /storage/
 /init_fields/
+/closure_discovery/log/
+/closure_discovery/wandb/
+/closure_discovery/log/
+/closure_discovery/dump/
 
 
 *__pycache__/

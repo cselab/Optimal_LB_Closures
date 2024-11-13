@@ -13,14 +13,14 @@ import numpy as np
 import subprocess
 
 # seeds used to reproduce results:
-seeds = np.array([102, 99, 33])
+seeds = np.array([102, 33])
 
 # define GPU number used for execution
 DEVICE = 1 # for execution on multiple GPUs try e.g. DEVICE = 2,3
 
 # Iterate through each seed and execute the command
 for seed in seeds:
-    command = f'CUDA_VISIBLE_DEVICES={DEVICE} PYTHONPATH=.:./XLB python xlb_flows/run_klmgrv.py --t_wish 645 --lamb 16 --seed {seed} --flow "Burn_in"'
+    command = f'CUDA_VISIBLE_DEVICES={DEVICE} PYTHONPATH=..:../XLB python xlb_flows/run_klmgrv.py --t_wish 645 --lamb 16 --seed {seed} --flow "Burn_in"'
     print(f"Executing: {command}")
     result = subprocess.run(command, shell=True)
     if result.returncode != 0:

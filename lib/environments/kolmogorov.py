@@ -16,12 +16,6 @@ from functools import partial
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from gymnasium import spaces
 from lib.environments.base import BaseEnvironment
-
-#temporary solution for xlb imports
-#sys.path.append(os.path.abspath(os.path.expanduser('~/XLB')))
-#from my_flows.kolmogorov_2d import Kolmogorov_flow, Decaying_flow
-#from src.utils import *
-
 from XLB.src.utils import *
 from xlb_flows.utils import *
 from xlb_flows.kolmogorov_2d import Kolmogorov_flow, Decaying_flow
@@ -35,7 +29,8 @@ def torch2jax(x):
 
 
 # path to the initialization files
-INIT_PATH = os.path.expanduser("~/XLB/vel_init/")
+#TODO: change this after new burn in simulation
+INIT_PATH = os.path.expanduser("~/CNN-MARL_closure_model_discovery/storage/vel_init/")
 FGS_DATA_PATH = os.path.expanduser("~/XLB/fgs_data/")
 FGS_DATA_PATH_3 = os.path.expanduser("~/XLB/fgs3_data/")
 # path to energy spectra
@@ -179,7 +174,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         return actual_actions
 
 
-
+"""
 
 # base environemnt for velocity mse between cgs and fgs
 class KolmogorovEnvironment18(BaseEnvironment, ABC):
@@ -2180,3 +2175,5 @@ class KolmogorovEnvironment24_decaying(BaseEnvironment, ABC):
         actual_actions = interpolated_actions[half_dist:(self.cgs.nx+half_dist), half_dist:(self.cgs.nx+half_dist)]
 
         return actual_actions
+
+"""
