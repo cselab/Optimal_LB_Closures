@@ -40,13 +40,33 @@ if __name__ == "__main__":
     args = get_args()
     print(args)
 
+    u0_path = os.path.expanduser(
+        f"~/CNN-MARL_closure_model_dicovery/xlb_flows/init_fields/"
+        f"velocity_kolmogorov_2d_910368_s{args.seed}.npy"
+        )
+
+    print(u0_path)
+
     try:
-        u0_path = os.path.expanduser(f"~/XLB/vel_init/velocity_burn_in_909313_s{args.seed}.npy")
-        rho0_path = os.path.expanduser(f"~/XLB/vel_init/density_burn_in_909313_s{args.seed}.npy")
-    except:
-        print(f"no file found for given seed = {args.seed}")
+        # File paths
+        u0_path = os.path.expanduser(
+            f"~/CNN-MARL_closure_model_dicovery/xlb_flows/init_fields/"
+            f"velocity_kolmogorov_2d_910368_s{args.seed}.npy"
+        )
+        rho0_path = os.path.expanduser(
+            f"~/CNN-MARL_closure_model_dicovery/xlb_flows/init_fields/"
+            f"density_kolmogorov_2d_910368_s{args.seed}.npy"
+        )
+        
+        # Verify file existence
+        if not os.path.exists(u0_path):
+            print(f"File not found: {u0_path}")
+        if not os.path.exists(rho0_path):
+            print(f"File not found: {rho0_path}")
     
-    print(f"seed = {args.seed}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 
     precision = "f64/f64"
     lattice = LatticeD2Q9(precision)
