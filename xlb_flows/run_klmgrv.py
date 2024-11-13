@@ -14,9 +14,9 @@ np.random.seed(42)
 jax.config.update('jax_enable_x64', True)
 
 flow_classes = {
-    "Kolmogorov": Kolmogorov_flow,
-    "Decaying": Decaying_flow,
-    "Burn_in": Burn_in_Kolmogorov_flow,
+    "Kolmogorov_BGK": Kolmogorov_flow,
+    "Decaying_BGK": Decaying_flow,
+    "Burn_in_BGK": Burn_in_Kolmogorov_flow,
     "Kolmogorov_KBC": Kolmogorov_flow_KBC,
     "Decaying_KBC": Decaying_flow_KBC
 }
@@ -31,7 +31,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--t_wish", type=int, default=18) # non-dimensional time
     parser.add_argument("--print_rate", type=int, default=32) # take 1 for dataset creation
     parser.add_argument("--flow", type=str, default="Kolmogorov") 
+    parser.add_argument("--model", type=str, default="BGK")
     parser.add_argument("--measure_speedup", type=int, default=False)
+   
 
     return parser.parse_known_args()[0]
 
@@ -80,9 +82,8 @@ if __name__ == "__main__":
     if args.flow == "Burn_in":
         kwargs["downsampling_factor"] = 1
 
-    # Retrieve the class based on args.flow
-    flow_class = flow_classes.get(args.flow)
-
+    flow_type = args.flow + '_' + args.model
+    flow_class = flow_classes.get(flow_type)
     # Check if the flow exists and create an instance
     if flow_class:
         sim = flow_class(**kwargs)
@@ -94,8 +95,8 @@ if __name__ == "__main__":
     
     else:
         # Define folder paths
-        main_folder = f"../results/re{int(Re)}_T{int(T)}_S{seed}_runs"
-        run_folder = f"re{int(Re)}_T{int(T)}_N{int(N)}_S{seed}_U{upsi}_{args.flow}"
+        main_folder = f"../results/re{int(Re)}_T{int(T)}_S{seed}_{args.flow}_runs"
+        run_folder = f"re{int(Re)}_T{int(T)}_N{int(N)}_S{seed}_U{upsi}_{args.model}"
 
         create_and_navigate_to(main_folder)
         create_and_navigate_to(run_folder)
