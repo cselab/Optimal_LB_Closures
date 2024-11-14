@@ -9,7 +9,7 @@
 /sweep_configs/
 /log/
 /gifs/
-/results/
+/results/*
 !/results/analysis.ipynb
 /dump/
 !/dump/Kolmogorov22_ppo_cgs1_fgs16/
