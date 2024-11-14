@@ -16,8 +16,8 @@ from functools import partial
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from gymnasium import spaces
 from lib.environments.base import BaseEnvironment
-from XLB.src.utils import *
-from xlb_flows.utils import *
+#from XLB.src.utils import *
+from xlb_flows.utils import vorticity_2d, get_kwargs, get_moments, energy_spectrum_2d, downsample_field
 from xlb_flows.kolmogorov_2d import Kolmogorov_flow, Decaying_flow
 
 
@@ -35,8 +35,8 @@ INIT_PATH = os.path.expanduser(
     "xlb_flows/init_fields/")
 
 INIT_PATH_SPEC = os.path.expanduser(
-    "~CNN-MARL_closure_model_discovery/"
-    "xlb_flows/init_fields/dns_spectrum/")
+    "~/CNN-MARL_closure_model_discovery/"
+    "xlb_flows/dns_spectrum/")
 
 #FGS_DATA_PATH = os.path.expanduser("~/XLB/fgs_data/")
 #FGS_DATA_PATH_3 = os.path.expanduser("~/XLB/fgs3_data/")

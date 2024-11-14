@@ -11,9 +11,6 @@ from tianshou.data import Batch, Collector, VectorReplayBuffer
 from tianshou.trainer import OnpolicyTrainer
 from tianshou.policy import PPOPolicy
 from tianshou.env import DummyVectorEnv
-
-#sys.path.append(os.path.abspath(os.path.expanduser('~/CNN-MARL_closure_model_disovery')))
-#sys.path.append(os.path.abspath(os.path.expanduser('~/CNN-MARL_closure_model_disovery/XLB')))
 from lib.environments import *
 from lib.utils import save_batch_to_file, model_name
 from lib.models import *
@@ -28,21 +25,21 @@ def get_args() -> argparse.Namespace:
 
     parser.add_argument("--algorithm", type=str, default="ppo")
     parser.add_argument("--environment", type=str, default="Kolmogorov")
-    parser.add_argument("--setup", type=str, default="interp") #options = "loc", "glob", "interp"
+    parser.add_argument("--setup", type=str, default="glob") #options = "loc", "glob", "interp"
 
-    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=42)
 
     #ENVIRONMENT ARGUMENTS 
-    parser.add_argument("--step_factor", type=int, default=8)
+    parser.add_argument("--step_factor", type=int, default=4)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
     parser.add_argument("--max_interactions", type=int, default=10000) #1588 - 1
     parser.add_argument("--train_num", type=int, default=1)
     parser.add_argument("--test_num", type=int, default=1)
-    parser.add_argument("--num_agents", type=int, default=8)
+    parser.add_argument("--num_agents", type=int, default=1)
 
     #POLICY ARGUMENTS 
-    parser.add_argument("--learning_rate", type=float, default=1e-4)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--adam_eps", type=float, default=1e-7)
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--reward_normalization", type=int, default=True)
@@ -57,17 +54,17 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--clip_range", type=float, default=0.2)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
-    parser.add_argument("--lr-decay", type=int, default=False)
+    parser.add_argument("--lr-decay", type=int, default=True)
 
     #COLLECTOR ARGUMENTS
-    parser.add_argument("--buffer_size", type=int, default=2000)
+    parser.add_argument("--buffer_size", type=int, default=20000)
 
     #LOGGER ARGUMENTS
     parser.add_argument("--logdir", type=str, default="log")
-    parser.add_argument("--task", type=str, default="local-omega-learning")
+    parser.add_argument("--task", type=str, default="ClosureRL")
     
     #TRAINER ARGUMENTS
-    parser.add_argument("--max_epoch", type=int, default=500)
+    parser.add_argument("--max_epoch", type=int, default=200)
     parser.add_argument("--step_per_epoch", type=int, default=1500)
     parser.add_argument("--repeat_per_collect", type=int, default=3)
     parser.add_argument("--episode_per_test", type=int, default=1)

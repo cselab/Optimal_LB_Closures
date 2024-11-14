@@ -8,6 +8,9 @@ from gymnasium import spaces
 from functools import partial
 import jax.numpy as jnp
 from jax import jit
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+
 
 
 from XLB.src.utils import *
@@ -323,3 +326,8 @@ def create_and_navigate_to(folder_name):
     os.makedirs(folder_name, exist_ok=True)
     with os.scandir(folder_name):
         os.chdir(folder_name)
+
+@partial(jit)
+def vorticity_2d(u, dx=1.0):
+    u_x_dy, u_y_dx = jnp.gradient(u[..., 0], dx, axis=1), jnp.gradient(u[..., 1], dx, axis=0)
+    return u_y_dx - u_x_dy

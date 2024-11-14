@@ -87,7 +87,7 @@ if __name__ == "__main__":
         print("flow does not exist")
 
     if args.flow == "Burn_in":
-        create_and_navigate_to("init_fields")
+        create_and_navigate_to("../results/init_fields")
     
     else:
         # Define folder paths

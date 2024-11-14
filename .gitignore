@@ -10,6 +10,7 @@
 /log/
 /gifs/
 /results/
+!/results/analysis.ipynb
 /dump/
 !/dump/Kolmogorov22_ppo_cgs1_fgs16/
 /XLB/
@@ -19,6 +20,7 @@
 /closure_discovery/wandb/
 /closure_discovery/log/
 /closure_discovery/dump/
+
 
 
 *__pycache__/
