@@ -12,17 +12,16 @@ DEVICE = 1  # For execution on multiple GPUs, adjust this number as needed
 
 # Flow configurations
 flow_configs = [
-    {"flow": "Kolmogorov", "Re": 1e4, "lambs": [1, 1, 2, 16], "models": ["", "KBC", "", ""]},
-    {"flow": "Decaying", "Re": 1e4, "lambs": [1, 1, 2, 16], "models": ["", "KBC", "", ""]},
-    {"flow": "Kolmogorov", "Re": 1e5, "lambs": [2, 2, 4, 16], "models": ["", "KBC", "", ""]}
+    {"flow": "Kolmogorov", "Re": 10000, "lambs": [1, 1, 2, 16], "models": ["BGK", "KBC", "BGK", "BGK"]},
+    {"flow": "Decaying", "Re": 10000, "lambs": [1, 1, 2, 16], "models": ["BGK", "KBC", "BGK", "BGK"]},
+    {"flow": "Kolmogorov", "Re": 100000, "lambs": [2, 2, 4, 16], "models": ["BGK", "KBC", "BGK", "BGK"]}
 ]
 
 # Function to execute command for a given configuration
 def execute_command(flow, Re, lamb, model, T, seed, device):
-    flow_model = f"{flow}_{model}"
     command = (
-        f'CUDA_VISIBLE_DEVICES={device} PYTHONPATH=..:../XLB python xlb_flows/run_klmgrv.py'
-        f'--t_wish {T} --lamb {lamb} --seed {seed} --flow {flow_model} --Re {Re}'
+        f'CUDA_VISIBLE_DEVICES={device} PYTHONPATH=..:../XLB python run_klmgrv.py'
+        f' --t_wish {T} --lamb {lamb} --seed {seed} --flow {flow} --model {model} --Re {Re}'
     )
     print(f"Executing: {command}")
     result = subprocess.run(command, shell=True)

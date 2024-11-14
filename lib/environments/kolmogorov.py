@@ -30,11 +30,17 @@ def torch2jax(x):
 
 # path to the initialization files
 #TODO: change this after new burn in simulation
-INIT_PATH = os.path.expanduser("~/CNN-MARL_closure_model_discovery/storage/vel_init/")
-FGS_DATA_PATH = os.path.expanduser("~/XLB/fgs_data/")
-FGS_DATA_PATH_3 = os.path.expanduser("~/XLB/fgs3_data/")
+INIT_PATH = os.path.expanduser(
+    "~/CNN-MARL_closure_model_discovery/"
+    "xlb_flows/init_fields/")
+
+INIT_PATH_SPEC = os.path.expanduser(
+    "~CNN-MARL_closure_model_discovery/"
+    "xlb_flows/init_fields/dns_spectrum/")
+
+#FGS_DATA_PATH = os.path.expanduser("~/XLB/fgs_data/")
+#FGS_DATA_PATH_3 = os.path.expanduser("~/XLB/fgs3_data/")
 # path to energy spectra
-INIT_PATH_SPEC = os.path.expanduser("~/XLB/dns_spectrum/")
 
 
 # base KolmogorvEnvironment for energy spectrum loss
@@ -64,8 +70,8 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.N = (cgs_lamb*128)
         self.cgs_lamb = cgs_lamb
         #CGS parameters
-        u0_path = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy" 
-        rho0_path = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy" 
+        u0_path = INIT_PATH + f"velocity_kolmogorov_2d_910368_s{self.sampled_seed}.npy" 
+        rho0_path = INIT_PATH + f"density_kolmogorov_2d_910368_s{self.sampled_seed}.npy" 
         self.kwargs1, endTime1, _, _ = get_kwargs(u0_path=u0_path,
                                                     rho0_path=rho0_path,
                                                     T_wish=227,
@@ -112,8 +118,8 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         super().reset(seed=seed, **kwargs)
         self.counter = 0
         self.sampled_seed = np.random.choice(self.possible_seeds) 
-        self.kwargs1["u0_path"] = INIT_PATH + f"velocity_burn_in_909313_s{self.sampled_seed}.npy"
-        self.kwargs1["rho0_path"] = INIT_PATH + f"density_burn_in_909313_s{self.sampled_seed}.npy"
+        self.kwargs1["u0_path"] = INIT_PATH + f"velocity_kolmogorov_2d_910368_s{self.sampled_seed}.npy" 
+        self.kwargs1["rho0_path"] = INIT_PATH + f"density_kolmogorov_2d_910368_s{self.sampled_seed}.npy" 
         if self.flow == "Kolmogorov":
             self.cgs = Kolmogorov_flow(**self.kwargs1)
         elif self.flow == "Decaying":

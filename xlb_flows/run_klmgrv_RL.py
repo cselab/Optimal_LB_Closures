@@ -37,7 +37,9 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--lamb", type=int, default=1) #scales spacial resolution
     parser.add_argument("--t_wish", type=int, default=18) # or 227 for visualization
     parser.add_argument("--print_rate", type=int, default=32) # take 1 for dataset creation
-    parser.add_argument("--flow", type=str, default="Kolmogorov_ClosureRL") 
+    parser.add_argument("--flow", type=str, default="Kolmogorov") 
+    parser.add_argument("--model", type=str, default="ClosureRL")
+    parser.add_argument("--setup", type=str, default="loc")
     parser.add_argument("--measure_speedup", type=int, default=False)
 
     return parser.parse_known_args()[0]
@@ -123,8 +125,17 @@ if __name__ == "__main__":
     print(args)
 
     try:
-        u0_path = os.path.expanduser(f"~/XLB/vel_init/velocity_burn_in_909313_s{args.seed}.npy")
-        rho0_path = os.path.expanduser(f"~/XLB/vel_init/density_burn_in_909313_s{args.seed}.npy")
+        
+        u0_path = os.path.expanduser(
+             f"~/CNN-MARL_closure_model_discovery/"
+             "xlb_flows/init_fields/"
+             f"velocity_kolmogorov_2d_910368_s{args.seed}.npy"
+             )
+        rho0_path = os.path.expanduser(
+             f"~/CNN-MARL_closure_model_discovery/"
+             "xlb_flows/init_fields/"
+             f"density_kolmogorov_2d_910368_s{args.seed}.npy"
+             )
     except:
         print(f"no file found for given seed = {args.seed}")
     
@@ -147,7 +158,8 @@ if __name__ == "__main__":
                                        measure_speedup=args.measure_speedup)
 
     # Retrieve the class based on args.flow
-    flow_class = flow_classes.get(args.flow)
+    flow_type = args.flow + '_' + args.model
+    flow_class = flow_classes.get(flow_type)
 
     #get acotor:
     DUMP_PATH = "../dump/Kolmogorov22_ppo_cgs1_fgs16/"
@@ -180,8 +192,8 @@ if __name__ == "__main__":
     
     else:
         # Define folder paths
-        main_folder = f"../results/re{int(Re)}_T{int(T)}_S{seed}_runs"
-        run_folder = f"re{int(Re)}_T{int(T)}_N{int(N)}_S{seed}_U{upsi}_{args.flow}"
+        main_folder = (f"../results/re{int(Re)}_T{int(T)}_S{seed}_{args.flow}_runs")
+        run_folder = f"re{int(Re)}_T{int(T)}_N{int(N)}_S{seed}_U{upsi}_{args.model+'-'+args.setup}"
 
         create_and_navigate_to(main_folder)
         create_and_navigate_to(run_folder)
