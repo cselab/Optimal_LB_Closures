@@ -7,7 +7,7 @@ import jax_cfd.base as cfd
 from jax import tree_util
 from xlb_flows.utils import *
 from xlb_flows.models import ClosureRLSim
-from XLB.src.utils import *
+#from XLB.src.utils import *
 from XLB.src.models import BGKSim, KBCSim, AdvectionDiffusionBGK
 
 
@@ -94,15 +94,14 @@ class Kolmogorov_flow(BGKSim):
             timestep = kwargs["timestep"]
 
             #save velocity field as npy
-            #fname = os.path.basename(__file__)
-            #fname = os.path.splitext(fname)[0]
-            #fname = "velocity_" + fname
-            #fname = fname + "_" + f"s{self.seed}"
-            #fname = fname + "_" + str(timestep).zfill(6)
-            #np.save(fname, u)
+            fname = os.path.basename(__file__)
+            fname = os.path.splitext(fname)[0]
+            fname = "velocity_" + fname
+            fname = fname + "_" + str(timestep).zfill(6)
+            np.save(fname, u)
 
-            v = vorticity_2d(u, self.dx_eff)
-            save_image(timestep, v, "vort_")
+            #v = vorticity_2d(u, self.dx_eff)
+            #save_image(timestep, v, "vort_")
 
             ## compute and save the energy spectrum
             #_, energy_spectrum = energy_spectrum_2d(u)

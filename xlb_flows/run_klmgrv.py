@@ -3,7 +3,7 @@ import jax
 import numpy as np
 import argparse
 
-from XLB.src.utils import *
+#from XLB.src.utils import 
 from XLB.src.lattice import LatticeD2Q9
 from xlb_flows.utils import *
 from xlb_flows.kolmogorov_2d import *

@@ -299,7 +299,7 @@ def save_image(timestep, fld, prefix=None, scale=None, show_time=False, tc = 1.0
     plt.clf()
     #plt.imsave(fname + '.png', fld.T, cmap=cm.jet, vmin=-0.001, vmax=0.001, origin='lower')
     if scale is None:
-        plt.imsave(fname + '.png', fld.T, cmap=seaborn.cm.icefire, vmin=-10, vmax=10, origin='lower')
+        plt.imsave(fname + '.png', fld.T, cmap=sn.cm.icefire, vmin=-10, vmax=10, origin='lower')
         #plt.imsave(fname + '.png', fld.T, cmap=seaborn.cm.icefire, origin='lower')
     else:
         
@@ -307,7 +307,7 @@ def save_image(timestep, fld, prefix=None, scale=None, show_time=False, tc = 1.0
             # translate timestep to non-dimensional time
             non_dim_time = int(round(timestep * tc,0))
             fig, ax = plt.subplots()
-            im = ax.imshow(fld.T, cmap=seaborn.cm.icefire, vmin=-scale, vmax=scale, origin='lower')
+            im = ax.imshow(fld.T, cmap=sn.cm.icefire, vmin=-scale, vmax=scale, origin='lower')
             bbox_props = dict(boxstyle="round,pad=0.3", edgecolor="none", facecolor="black", alpha=0.7)
             ax.text(0.1, 0.1, f"T = {non_dim_time}", ha='left', va='bottom', fontsize=33, color='white', weight='bold', bbox=bbox_props, transform=ax.transAxes)
             ax.axis('off')
@@ -315,7 +315,7 @@ def save_image(timestep, fld, prefix=None, scale=None, show_time=False, tc = 1.0
             plt.close()
         
         else:
-            plt.imsave(fname + '.png', fld.T, cmap=seaborn.cm.icefire, vmin=-scale, vmax=scale, origin='lower')
+            plt.imsave(fname + '.png', fld.T, cmap=sn.cm.icefire, vmin=-scale, vmax=scale, origin='lower')
 
 
 def create_and_navigate_to(folder_name):
