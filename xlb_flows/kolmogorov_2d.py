@@ -87,6 +87,13 @@ class Kolmogorov_flow(BGKSim):
         if u is not None:
             force = force - self.alpha * u
         return self.precisionPolicy.cast_to_output(force)
+    
+    # changed force as input to get_force
+    def apply_force(self, f_postcollision, feq, rho, u):
+        delta_u = self.get_force(u)
+        feq_force = self.equilibrium(rho, u + delta_u, cast_output=False)
+        f_postcollision = f_postcollision + feq_force - feq
+        return f_postcollision
 
 
     def output_data(self, **kwargs):
@@ -241,6 +248,13 @@ class Kolmogorov_flow_ClosureRL(ClosureRLSim):
         if u is not None:
             force = force - self.alpha * u
         return self.precisionPolicy.cast_to_output(force)
+    
+    # changed force as input to get_force
+    def apply_force(self, f_postcollision, feq, rho, u):
+        delta_u = self.get_force(u)
+        feq_force = self.equilibrium(rho, u + delta_u, cast_output=False)
+        f_postcollision = f_postcollision + feq_force - feq
+        return f_postcollision
 
 
     def output_data(self, **kwargs):
