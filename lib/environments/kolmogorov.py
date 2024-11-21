@@ -92,12 +92,19 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         #reward - enerty spectrum
-        self.means_dns = np.load(INIT_PATH_SPEC+'means_log_k5-10_dns.npy')
-        stds_dns = np.load(INIT_PATH_SPEC+'stds_log_k5-10_dns.npy')
-        cov = np.diag(stds_dns)
-        self.cov_inverse = np.diag(1/stds_dns)
-        assert np.any(np.isnan(self.cov_inverse)) is not True
-        assert cov@self.cov_inverse is not np.identity(len(self.means_dns))
+        #self.means_dns = np.load(INIT_PATH_SPEC+'means_log_k5-10_dns.npy')
+        #stds_dns = np.load(INIT_PATH_SPEC+'stds_log_k5-10_dns.npy')
+        self.means_dns = np.load(INIT_PATH_SPEC+'new_spec_mean.npy')
+        #stds_dns = np.load(INIT_PATH_SPEC+'new_spec_std.npy')
+        #k = np.linspace(0,62, 63)
+        #take values from 1: to avoid divission by zero
+        #self.means_dns = np.log((self.means_dns[1:]*k[1:]**5)/10)
+        #stds_dns = np.log((stds_dns[1:]*k[1:]**5)/10)
+        #stds_dns = np.abs(stds_dns)
+        #cov = np.diag(stds_dns)
+        #self.cov_inverse = np.diag(1/stds_dns)
+        #assert np.any(np.isnan(self.cov_inverse)) is not True
+        #assert cov@self.cov_inverse is not np.identity(len(self.means_dns))
     
         #Environment specifications
         self.observation_space = spaces.Box(low=-3,
@@ -147,7 +154,8 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
         k, E1 = energy_spectrum_2d(downsample_field(self.u1, self.cgs_lamb))
-        reward = self.E_loss(E1, k)
+        #reward = self.E_loss(E1, k)
+        reward = self.E_loss_2(E1, k)
         terminated = False
         if np.any([np.any(self.f1 < 0),
                     np.any(self.f1 > 1),
@@ -166,7 +174,14 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
 
     def E_loss(self, means_cgs, k):
         means_diff = (np.log(means_cgs[1:]*k[1:]**5)/10) - self.means_dns
-        return 1 + np.log(np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff))/64
+        #expo = np.max([np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff),1e-12])
+        expo = np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff)
+        return 1 + np.log(expo)/64
+    
+    def E_loss_2(self, means_cgs, k, alpha=0.4):
+        mse = (((means_cgs - self.means_dns)/self.means_dns)**2).sum()
+        return 2*np.exp((-1/(alpha*64))*mse) - 1
+
     
     def interpolate_actions(self, actions):
         dist = int(self.N // self.N_agents) #distance between agents
