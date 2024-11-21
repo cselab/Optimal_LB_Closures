@@ -25,23 +25,45 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--flow", type=str, default="Kolmogorov") 
     parser.add_argument("--model", type=str, default="ClosureRL")
     parser.add_argument("--measure_speedup", type=int, default=False)
+    parser.add_argument("--setup", type=str, default="glob")
    
     return parser.parse_known_args()[0]
 
+model_ids = {
+    "loc": "20241120-090811", #20241119-110929 #20241118-093042 #20241115-111342
+    "glob": "20241119-084717", #20241118-112114 #20241114-144428 #105349",
+    "interp": "",
+}
+
+agents = {
+    "loc": 128,
+    "glob": 1,
+    "interp": 8,
+}
+
 INIT_DUMP = os.path.expanduser("~/CNN-MARL_closure_model_discovery/")
-DUMP_PATH = "dump/Kolmogorov22_ppo_cgs1_fgs16/"
-ID = "20241021-110311"
+
+#old local 
+#DUMP_PATH = "dump/Kolmogorov22_ppo_cgs1_fgs16/"
+#ID = "20241021-110311"
+
+#old global
+#DUMP_PATH = "dump/Kolmogorov22_global_ppo_cgs1_fgs16/"
+#ID = "20241030-115319"
 
 if __name__ == "__main__":
 
-
+    test_args = get_args()
+    DUMP_PATH = "results/weights/Kolmogorov_"+test_args.setup+"_ppo/"
+    ID = model_ids.get(test_args.setup)
     with open(INIT_DUMP+DUMP_PATH+'config_'+ID+'.pkl', 'rb') as f:
         train_args = pickle.load(f)
-    #TODO: remove this for new runs
-    train_args.setup = "loc"
-    train_args.num_agents = 128
 
-    test_args = get_args()
+    #TODO: this can be remove fro new setups
+    #train_args.setup = test_args.setup
+    #train_args.num_agents = agents.get(test_args.setup)
+
+    
     N = test_args.lamb * 128
     num_agents = train_args.num_agents * test_args.lamb
 
@@ -84,7 +106,7 @@ if __name__ == "__main__":
     )
 
     #load policy
-    policy.load_state_dict(torch.load(INIT_DUMP+DUMP_PATH+'policy_'+ID+'.pth'))
+    policy.load_state_dict(torch.load(INIT_DUMP+DUMP_PATH+'best_policy_'+ID+'.pth'))
 
     # Define folder paths
     main_folder = f"../results/re{int(test_args.Re)}_T{int(test_args.T)}_S{test_args.seed}_{test_args.flow}_runs"
@@ -107,7 +129,7 @@ if __name__ == "__main__":
     episode_is_over = False
     m = 20025*test_args.lamb
     io_rate = 32*test_args.lamb
-    for step in tqdm(range(m+1)):
+    for step in tqdm(range(m)):
         batch = policy(Batch(obs=np.array([obs]), info=inf))
         action = batch.act[0].detach().cpu().numpy()
         act = policy.map_action(action)
