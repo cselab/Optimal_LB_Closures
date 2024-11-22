@@ -34,9 +34,12 @@ INIT_PATH = os.path.expanduser(
     "~/CNN-MARL_closure_model_discovery/"
     "xlb_flows/init_fields/")
 
+#INIT_PATH_SPEC = os.path.expanduser(
+#    "~/CNN-MARL_closure_model_discovery/"
+#    "xlb_flows/dns_spectrum/")
 INIT_PATH_SPEC = os.path.expanduser(
     "~/CNN-MARL_closure_model_discovery/"
-    "xlb_flows/dns_spectrum/")
+    "results/dns_spectra/")
 
 #FGS_DATA_PATH = os.path.expanduser("~/XLB/fgs_data/")
 #FGS_DATA_PATH_3 = os.path.expanduser("~/XLB/fgs3_data/")
@@ -93,16 +96,17 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         #reward - enerty spectrum
         #self.means_dns = np.load(INIT_PATH_SPEC+'means_log_k5-10_dns.npy')
+        self.means_dns = np.load(INIT_PATH_SPEC+'dns_mean_scaled.npy')
+        #self.means_dns = np.load(INIT_PATH_SPEC+'dns_mean.npy')
+        stds_dns = np.load(INIT_PATH_SPEC+'dns_std_scaled_posterior.npy')
         #stds_dns = np.load(INIT_PATH_SPEC+'stds_log_k5-10_dns.npy')
-        self.means_dns = np.load(INIT_PATH_SPEC+'new_spec_mean.npy')
-        #stds_dns = np.load(INIT_PATH_SPEC+'new_spec_std.npy')
         #k = np.linspace(0,62, 63)
         #take values from 1: to avoid divission by zero
         #self.means_dns = np.log((self.means_dns[1:]*k[1:]**5)/10)
         #stds_dns = np.log((stds_dns[1:]*k[1:]**5)/10)
-        #stds_dns = np.abs(stds_dns)
+        stds_dns = np.abs(stds_dns)
         #cov = np.diag(stds_dns)
-        #self.cov_inverse = np.diag(1/stds_dns)
+        self.cov_inverse = np.diag(1/stds_dns)
         #assert np.any(np.isnan(self.cov_inverse)) is not True
         #assert cov@self.cov_inverse is not np.identity(len(self.means_dns))
     
@@ -155,7 +159,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         state = np.concatenate((self.rho1,self.u1, self.P_neq1), axis=-1)
         k, E1 = energy_spectrum_2d(downsample_field(self.u1, self.cgs_lamb))
         #reward = self.E_loss(E1, k)
-        reward = self.E_loss_2(E1, k)
+        reward = self.E_loss(E1, k)
         terminated = False
         if np.any([np.any(self.f1 < 0),
                     np.any(self.f1 > 1),

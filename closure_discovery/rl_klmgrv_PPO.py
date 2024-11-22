@@ -30,7 +30,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42)
 
     #ENVIRONMENT ARGUMENTS 
-    parser.add_argument("--step_factor", type=int, default=4)
+    parser.add_argument("--step_factor", type=int, default=8)
     parser.add_argument("--cgs_resolution", type=int, default=1)    
     parser.add_argument("--fgs_resolution", type=int, default=16)
     parser.add_argument("--max_interactions", type=int, default=10000) #1588 - 1
@@ -54,7 +54,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--clip_range", type=float, default=0.2)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
-    parser.add_argument("--lr-decay", type=int, default=True)
+    parser.add_argument("--lr-decay", type=int, default=False)
 
     #COLLECTOR ARGUMENTS
     parser.add_argument("--buffer_size", type=int, default=20000)

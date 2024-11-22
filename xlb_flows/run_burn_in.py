@@ -20,7 +20,7 @@ DEVICE = 1 # for execution on multiple GPUs try e.g. DEVICE = 2,3
 
 # Iterate through each seed and execute the command
 for seed in seeds:
-    command = f'CUDA_VISIBLE_DEVICES={DEVICE} PYTHONPATH=..:../XLB python run_klmgrv.py --t_wish 645 --lamb 16 --Re 1000 --seed {seed} --flow "Burn_in"'
+    command = f'CUDA_VISIBLE_DEVICES={DEVICE} PYTHONPATH=..:../XLB python run_klmgrv.py --t_wish 645 --lamb 16 --Re 10000 --seed {seed} --flow "Burn_in"'
     print(f"Executing: {command}")
     result = subprocess.run(command, shell=True)
     if result.returncode != 0:

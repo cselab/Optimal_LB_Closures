@@ -57,4 +57,14 @@ $ python create_reference_runs.py
 
 ### 4. Measure speedup
 
+## Some usefull RL resources
+- [Andrej Karpahty's blog post](http://karpathy.github.io/2016/05/31/rl/)
+- [Jared Tumiel's blog post](https://www.alexirpan.com/2018/02/14/rl-hard.html)
+
+- [OpenAI's Spinning up documentation](https://spinningup.openai.com/en/latest/)
+- David Silver's course on RL, [recordings](https://www.youtube.com/watch?v=2pWv7GOvuf0&list=PLqYmG7hTraZDM-OYHWgPebj2MfCFzFObQ) and [slides](https://www.davidsilver.uk/teaching/)
+- [Berkley DRL course](http://rail.eecs.berkeley.edu/deeprlcourse/)
+- [RL in practice - tips & tricks](https://www.youtube.com/watch?v=Ikngt0_DXJg)
+
+
 ## Acknowledgements
