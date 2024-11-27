@@ -30,15 +30,15 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 model_ids = {
-    "loc": "20241120-090811", #20241119-110929 #20241118-093042 #20241115-111342
-    "glob": "20241122-091942", #20241118-112114 #20241114-144428 #105349",
-    "interp": "",
+    "loc": "20241122-122518", #20241119-110929 #20241118-093042 #20241115-111342
+    "glob": "20241127-045152", #20241126-160618 #20241126-123326 #20241123-172146 #20241118-112114,
+    "interp": "20241126-185113",
 }
 
 agents = {
     "loc": 128,
     "glob": 1,
-    "interp": 8,
+    "interp": 16,
 }
 
 INIT_DUMP = os.path.expanduser("~/CNN-MARL_closure_model_discovery/")
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         critic = central_critic_net2(in_channels=6, device=device).to(device)
     elif train_args.setup == "interp":
         actor = FullyConvNet_interpolating_agents3(in_channels=6, N=num_agents, device=device, nx=N).to(device)
-        critic = central_critic_net4(in_channels=6, device=device).to(device)
+        critic = central_critic_net2(in_channels=6, device=device).to(device)
 
     actor_critic = ActorCritic(actor=actor, critic=critic)
     optim = torch.optim.AdamW(actor_critic.parameters(), lr=train_args.learning_rate, eps=train_args.adam_eps)
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     )
 
     #load policy
-    policy.load_state_dict(torch.load(INIT_DUMP+DUMP_PATH+'best_policy_'+ID+'.pth'))
+    policy.load_state_dict(torch.load(INIT_DUMP+DUMP_PATH+'final_policy_'+ID+'.pth'))
 
     # Define folder paths
     main_folder = f"../results/re{int(test_args.Re)}_T{int(test_args.T)}_S{test_args.seed}_{test_args.flow}_runs"
@@ -126,6 +126,7 @@ if __name__ == "__main__":
     policy.eval()
     obs ,inf = test_env.reset()
     acts = []
+    states = []
     episode_is_over = False
     m = 20025*test_args.lamb
     io_rate = 32*test_args.lamb
@@ -135,8 +136,13 @@ if __name__ == "__main__":
         act = policy.map_action(action)
         obs, rew, terminated, truncated, inf = test_env.step(act)
         acts.append(act)
+        states.append(obs)
         reward += rew
         if step%io_rate==0:
+            #print("**********************************************************")
+            #print(action.mean(), action.min(), action.max())
+            #print(act.mean(), act.min(), act.max())
+            #print("**********************************************************")
            #save velocity field as npy
             fname = "klmgrv"
             fname = "velocity_" + fname
@@ -154,4 +160,6 @@ if __name__ == "__main__":
             episode_is_over = True
 
     print(f"#steps = {step}, Total Reward = {reward.mean()}")
+    print(f"states: {np.array(states).shape()}")
+    print(f"actions: {np.array(acts).mean(axis=-1)}")
     test_env.close()
