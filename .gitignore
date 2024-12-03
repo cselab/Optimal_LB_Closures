@@ -8,9 +8,9 @@
 /closure_discovery/log/
 /closure_discovery/wandb/
 
-/results/*
-!/results/analysis.ipynb
-!results/figures/
+/results/weights/*
+/results/re*
+
 
 
 
