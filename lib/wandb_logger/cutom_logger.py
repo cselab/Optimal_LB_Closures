@@ -63,7 +63,6 @@ class WandbLogger(BaseLogger):
         monitor_gym: bool = True,
     ) -> None:
 
-        print(train_interval, test_interval, update_interval, info_interval)
         super().__init__(train_interval=train_interval, test_interval=test_interval,
                     update_interval=update_interval)
         self.last_save_step = -1
