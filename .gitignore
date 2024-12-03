@@ -25,7 +25,7 @@
 */dns_spectrum/
 /results/*
 !/results/analysis.ipynb
-!/results/figures/model_eval.gif
+!/results/figures/*
 
 
 
