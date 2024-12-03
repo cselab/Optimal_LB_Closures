@@ -9,8 +9,6 @@
 /sweep_configs/
 /log/
 /gifs/
-/results/*
-!/results/analysis.ipynb
 /dump/
 !/dump/Kolmogorov22_ppo_cgs1_fgs16/
 /XLB/
@@ -25,6 +23,8 @@
 */init_fields_re1000/
 */dns_spectra/
 */dns_spectrum/
+/results/*
+!/results/analysis.ipynb
 !/results/figures/model_eval.gif
 
 
