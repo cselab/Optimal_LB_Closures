@@ -1,12 +1,9 @@
-# Closure Discovery for Coarse Grained Partial Differential Equations using Multi-Agent Reinforcement Learning
+# Adaptive Closure Modeling for Lattice Boltzmann Methods using Multi-Agent Reinforcement Learning
 
 ## Description
-This is the official PyTorch/tianshou implementation of the paper *Closure Discovery for Coarse Grained Partial Differential Equations using Multi-Agent Reinforcement Learning*.
+This is the official implementation of the MSc thesis *Adaptive Closure Modeling for Lattice Boltzmann Methods using Multi-Agent Reinforcement Learning*.
 
-
-This repository allows to train a multi-agent reinforcement learning (MARL) agents to discover a closure model for a multiscale system.
-As a result, the agents are able to improve the accuracy of a coarse-grained simulation (CGS) significantly.
-A qualitative example of the improvement is shown in the figure below. The CGS combined with the agents is referred to as CNN-MARL.
+Reinforcement Learning (RL) is used for automatic discovery of hybrid turbulence models for Lattice Boltzmann Methods (LBM). LBM offers advantages such as easy access to macroscopic flow features and its complete locality, which allows efficient parallelization. RL eliminates the need for costly direct numerical simulation data during training by using an energy spectrum similarity measure as a reward. We have implemented several multi-agent RL models (ReLBM) with fully convolutional networks, achieving stabilization of turbulent 2D Kolmogorov flows and more accurate energy spectra than traditional LBM turbulence models. An example of the performance of a ReLBM at resolution $N = 128$, compared to a coarse LBGK simulation (128_BGK) and a resolved direct numerical simulation (2048_GK), is shown below. For RL training we used [Tianshou](https://tianshou.org/en/stable/) and for the LBM simulations we used [XLB](https://github.com/Autodesk/XLB). 
 
 ![](results/figures/model_eval.gif)
 
@@ -20,7 +17,7 @@ $ git clone git@github.com:cselab/CNN-MARL_closure_model_discovery.git
 $ cd CNN-MARL_closure_model_discovery
 $ git clone git@github.com:Autodesk/XLB.git -b main-old
 ```
-To turn of print statements in XLB, optinally modify `XLB/src/base.py` by removing/commenting:
+To disable print statements in XLB, optionally modify `XLB/src/base.py` by removing or commenting out:
 ```python
 self.show_simulation_parameters()
 ...
@@ -37,7 +34,7 @@ A burn in simulation is used to statistically stabalize the Kolmogorov flow. Run
 $ cd xlb_flows
 $ python run_burn_in.py
 ```
-to run a XLB simulaton for of the 2d Kolmogorov flow for $T=645$ at resolution $N=2048$ for seeds $s \in \{102, 33\}$. The final density and velocity fields are used to initialize all future kolmgorov flows. This step is optional, as we included the reulting fields of the burn in simulation in [xlb_flows/init_fields](xlb_flows/init_fields).
+to run an XLB simulation of the 2D Kolmogorov flow for $T=645$ at resolution $N=2048$ for seeds $s \in \{102, 99, 33\}$. The final density and velocity fields will be used to initialize all future Kolmogorov flows. $s=102$ is used for training, $s=99$ for validation, and $s=33$ for testing.  This step is optional as we have included the resulting fields from the burn in simulation in [xlb_flows/init_fields](xlb_flows/init_fields).
 
 
 ## Model Training (Optional)
@@ -47,26 +44,31 @@ to run a XLB simulaton for of the 2d Kolmogorov flow for $T=645$ at resolution $
 ### 1. Create references for testing
 To create all the reference solutions used for testing the ClosureRL models, run:
 ```console
-$ cd xlb/flows
+$ cd xlb_flows
 $ python create_reference_runs.py
 ```
- Namely it runs a BGK and a KBC simulation at the same resolution as the ClosureRL model, a BGK at twice the resolution, and a BGK simulation at DNS resolution $N=2048$. This is done for all 3 test cases: Kolmogorov flow at $Re=10^4$ and $Re=10^5$ and a Decaying flow at $10^4$. All simulations run for $T=227$, and the velocity filed is saved every $32$ steps for the CGS resolution.
+ It runs a BGK and a KBC simulation at the same resolution as the ClosureRL model, a BGK simulation at twice the resolution, and a BGK simulation at DNS resolution $N=2048$. This is done for all 3 test cases: Kolmogorov flow at $Re=10^4$ and $Re=10^5$ and a decaying flow at $10^4$. All simulations run for $T=227$, and the velocity file is saved every $32$ steps for the CGS resolution.
 
 
 ### 2. Evaluate ClosureRL models
+To evaluate the trained models run:
+```console
+$ cd closure_discovery
+$ python create_test_runs.py
+```
+This will evaluate all 3 models (global, interpolating and local) on the 3 test cases and store the velocity fields used to create the figures.
 
 ### 3. Create figures
+The testing figures are plottet in [results/analysis.ipynb](results/analysis.ipynb).
+The action interpretation figures are plottet in [closure_discovery/action_analysis.ipynb](closure_discovery/action_analysis.ipynb).
 
 ### 4. Measure speedup
-
-## Some usefull RL resources
-- [Andrej Karpahty's blog post](http://karpathy.github.io/2016/05/31/rl/)
-- [Jared Tumiel's blog post](https://www.alexirpan.com/2018/02/14/rl-hard.html)
-
-- [OpenAI's Spinning up documentation](https://spinningup.openai.com/en/latest/)
-- David Silver's course on RL, [recordings](https://www.youtube.com/watch?v=2pWv7GOvuf0&list=PLqYmG7hTraZDM-OYHWgPebj2MfCFzFObQ) and [slides](https://www.davidsilver.uk/teaching/)
-- [Berkley DRL course](http://rail.eecs.berkeley.edu/deeprlcourse/)
-- [RL in practice - tips & tricks](https://www.youtube.com/watch?v=Ikngt0_DXJg)
+To measure the speedup and create the speedup plot, run:
+```console
+$ cd xlb_flows
+$ python measure_speedup.py
+```
 
 
 ## Acknowledgements
+The code was build on the the 
