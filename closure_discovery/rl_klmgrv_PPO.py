@@ -57,7 +57,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--lr-decay", type=int, default=False)
 
     #COLLECTOR ARGUMENTS
-    parser.add_argument("--buffer_size", type=int, default=20000)
+    parser.add_argument("--buffer_size", type=int, default=2000)
 
     #LOGGER ARGUMENTS
     parser.add_argument("--logdir", type=str, default="log")
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     #              99, 359, 151, 130, 149, 308, 257, 343, 413, 293, 385, 191, 276,
     #              160, 313, 21, 252, 235, 344, 42])
     train_seeds = [102]
-    val_seeds = [102]
+    val_seeds = [33]
     
     train_env = KolmogorovEnvironment(step_factor=args.step_factor,
                                       max_episode_steps=args.max_interactions,
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     actor_critic = ActorCritic(actor=actor, critic=critic)
 
 
-    optim = torch.optim.AdamW(actor_critic.parameters(), lr=args.learning_rate, eps=args.adam_eps)
+    optim = torch.optim.Adam(actor_critic.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
 
     if args.lr_decay == True:

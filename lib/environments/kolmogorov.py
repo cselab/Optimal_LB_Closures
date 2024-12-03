@@ -98,7 +98,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         #self.means_dns = np.load(INIT_PATH_SPEC+'means_log_k5-10_dns.npy')
         self.means_dns = np.load(INIT_PATH_SPEC+'dns_mean_scaled.npy')
         #self.means_dns = np.load(INIT_PATH_SPEC+'dns_mean.npy')
-        stds_dns = np.load(INIT_PATH_SPEC+'dns_std_scaled_posterior.npy')
+        stds_dns = np.load(INIT_PATH_SPEC+'dns_std_scaled_prior.npy')
         #stds_dns = np.load(INIT_PATH_SPEC+'stds_log_k5-10_dns.npy')
         #k = np.linspace(0,62, 63)
         #take values from 1: to avoid divission by zero

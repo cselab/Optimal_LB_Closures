@@ -30,9 +30,9 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 model_ids = {
-    "loc": "20241122-122518", #20241119-110929 #20241118-093042 #20241115-111342
-    "glob": "20241127-045152", #20241126-160618 #20241126-123326 #20241123-172146 #20241118-112114,
-    "interp": "20241126-185113",
+    "loc": "20241201-202320", #"20241122-122518" #20241119-110929 #20241118-093042 #20241115-111342
+    "glob": "20241130-090324", #"20241127-045152" #20241126-160618 #20241126-123326 #20241123-172146 #20241118-112114,
+    "interp": "20241201-202544" #"20241126-185113"
 }
 
 agents = {
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     )
 
     #load policy
-    policy.load_state_dict(torch.load(INIT_DUMP+DUMP_PATH+'final_policy_'+ID+'.pth'))
+    policy.load_state_dict(torch.load(INIT_DUMP+DUMP_PATH+'best_policy_'+ID+'.pth'))
 
     # Define folder paths
     main_folder = f"../results/re{int(test_args.Re)}_T{int(test_args.T)}_S{test_args.seed}_{test_args.flow}_runs"
