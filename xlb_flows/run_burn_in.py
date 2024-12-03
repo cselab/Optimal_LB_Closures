@@ -13,7 +13,7 @@ import numpy as np
 import subprocess
 
 # seeds used to reproduce results:
-seeds = np.array([102, 33])
+seeds = np.array([102, 99, 33])
 
 # define GPU number used for execution
 DEVICE = 1 # for execution on multiple GPUs try e.g. DEVICE = 2,3

@@ -94,21 +94,10 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
             action_shape = (self.N_agents, self.N_agents)
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
-        #reward - enerty spectrum
-        #self.means_dns = np.load(INIT_PATH_SPEC+'means_log_k5-10_dns.npy')
         self.means_dns = np.load(INIT_PATH_SPEC+'dns_mean_scaled.npy')
-        #self.means_dns = np.load(INIT_PATH_SPEC+'dns_mean.npy')
         stds_dns = np.load(INIT_PATH_SPEC+'dns_std_scaled_prior.npy')
-        #stds_dns = np.load(INIT_PATH_SPEC+'stds_log_k5-10_dns.npy')
-        #k = np.linspace(0,62, 63)
-        #take values from 1: to avoid divission by zero
-        #self.means_dns = np.log((self.means_dns[1:]*k[1:]**5)/10)
-        #stds_dns = np.log((stds_dns[1:]*k[1:]**5)/10)
         stds_dns = np.abs(stds_dns)
-        #cov = np.diag(stds_dns)
         self.cov_inverse = np.diag(1/stds_dns)
-        #assert np.any(np.isnan(self.cov_inverse)) is not True
-        #assert cov@self.cov_inverse is not np.identity(len(self.means_dns))
     
         #Environment specifications
         self.observation_space = spaces.Box(low=-3,
@@ -181,10 +170,6 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         #expo = np.max([np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff),1e-12])
         expo = np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff)
         return 1 + np.log(expo)/64
-    
-    def E_loss_2(self, means_cgs, k, alpha=0.4):
-        mse = (((means_cgs - self.means_dns)/self.means_dns)**2).sum()
-        return 2*np.exp((-1/(alpha*64))*mse) - 1
 
     
     def interpolate_actions(self, actions):

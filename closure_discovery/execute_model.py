@@ -139,10 +139,6 @@ if __name__ == "__main__":
         states.append(obs)
         reward += rew
         if step%io_rate==0:
-            #print("**********************************************************")
-            #print(action.mean(), action.min(), action.max())
-            #print(act.mean(), act.min(), act.max())
-            #print("**********************************************************")
            #save velocity field as npy
             fname = "klmgrv"
             fname = "velocity_" + fname

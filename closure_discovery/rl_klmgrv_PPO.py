@@ -49,12 +49,12 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--value_clip", type=int, default=True)
     parser.add_argument("--action_scaling", type=int, default=True)
     parser.add_argument("--action_bound_method", type=str, default="clip")
-    parser.add_argument("--ent_coef", type=float, default=1e-4)
+    parser.add_argument("--ent_coef", type=float, default=0)
     parser.add_argument("--vf_coef", type=float, default=0.25)
     parser.add_argument("--clip_range", type=float, default=0.2)
     parser.add_argument("--max_grad_norm", type=float, default=0.5)
     parser.add_argument("--gae_lambda", type=float, default=0.95)
-    parser.add_argument("--lr-decay", type=int, default=False)
+    parser.add_argument("--lr_decay", type=int, default=False)
 
     #COLLECTOR ARGUMENTS
     parser.add_argument("--buffer_size", type=int, default=2000)
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     #              99, 359, 151, 130, 149, 308, 257, 343, 413, 293, 385, 191, 276,
     #              160, 313, 21, 252, 235, 344, 42])
     train_seeds = [102]
-    val_seeds = [33]
+    val_seeds = [99]
     
     train_env = KolmogorovEnvironment(step_factor=args.step_factor,
                                       max_episode_steps=args.max_interactions,
@@ -135,10 +135,9 @@ if __name__ == '__main__':
         critic = central_critic_net2(in_channels=6, device=device).to(device)
     elif args.setup == "interp":
         actor = FullyConvNet_interpolating_agents3(in_channels=6, N=args.num_agents, device=device).to(device)
-        critic = central_critic_net4(in_channels=6, device=device).to(device)
+        critic = central_critic_net2(in_channels=6, device=device).to(device)
 
     actor_critic = ActorCritic(actor=actor, critic=critic)
-
 
     optim = torch.optim.Adam(actor_critic.parameters(), lr=args.learning_rate, eps=args.adam_eps)
     dist = torch.distributions.Normal
