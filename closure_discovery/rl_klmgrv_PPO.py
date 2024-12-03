@@ -26,7 +26,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--algorithm", type=str, default="ppo")
     parser.add_argument("--environment", type=str, default="Kolmogorov")
     parser.add_argument("--setup", type=str, default="loc") #options = "loc", "glob", "interp"
-
+    
     parser.add_argument("--seed", type=int, default=42)
 
     #ENVIRONMENT ARGUMENTS 
@@ -97,13 +97,14 @@ if __name__ == '__main__':
     dump_dir = model_name(args)
     # Generate a unique ID based on the current timestamp
     unique_id = strftime("%Y%m%d-%H%M%S")
+
+    # Save config file
+    config_fname = f"{dump_dir}/config_{unique_id}.pkl"
+    save_batch_to_file(args, config_fname)
     
     #######################################################################################################
     ####### environments ##################################################################################
     #######################################################################################################
-    #seeds = np.array([102, 348, 270, 106, 71, 188, 20, 121, 214, 330, 87, 372,
-    #              99, 359, 151, 130, 149, 308, 257, 343, 413, 293, 385, 191, 276,
-    #              160, 313, 21, 252, 235, 344, 42])
     train_seeds = [102]
     val_seeds = [99]
     
@@ -232,10 +233,6 @@ if __name__ == '__main__':
     # Save total results
     total_results_fname = f"{dump_dir}/training_stats_{unique_id}.pkl"
     save_batch_to_file(total_results, total_results_fname)
-
-    # Save config file
-    config_fname = f"{dump_dir}/config_{unique_id}.pkl"
-    save_batch_to_file(args, config_fname)
 
     # Save policy
     policy_fname = f"{dump_dir}/final_policy_{unique_id}.pth"

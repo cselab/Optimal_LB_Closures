@@ -197,11 +197,8 @@ class FullyConvNet_interpolating_agents(nn.Module):
         layers.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1, padding_mode=padding_mode))
         layers.append(nn.ReLU())
 
-        # **Adjust the number of stride=2 layers based on the receptive field**
-        # Skip additional downsampling, ensure you don't reduce beyond N x N
-        for _ in range(max(int(receptive_field / 4) - 1, 0)):
-            layers.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, padding_mode=padding_mode))  # No downsampling here
-            layers.append(nn.ReLU())
+        layers.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, padding_mode=padding_mode))  # No downsampling here
+        layers.append(nn.ReLU())
 
         # Final convolution to map to output N x N (adjust stride to 1 to avoid further downsampling)
         layers.append(nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, stride=1, padding=1, padding_mode=padding_mode))
@@ -257,15 +254,15 @@ class FullyConvNet_interpolating_agents3(nn.Module):
         layers = []
         # convolutional filter
         layers.append(nn.Conv2d(in_channels=in_channels, out_channels=128, kernel_size=k, stride=k-1, padding=1, padding_mode=padding_mode))
-        layers.append(nn.ELU())
+        layers.append(nn.ReLU())
 
         # Second convolutional
-        layers.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=1, stride=1, padding=0)) 
-        layers.append(nn.ELU())
+        layers.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=1, stride=1, padding=0)) 
+        layers.append(nn.ReLU())
         
         # Third block
-        layers.append(nn.Conv2d(in_channels=256, out_channels=128, kernel_size=1, stride=1, padding=0))
-        layers.append(nn.ELU())
+        layers.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=1, stride=1, padding=0))
+        layers.append(nn.ReLU())
 
         self.model = nn.Sequential(*layers)
 

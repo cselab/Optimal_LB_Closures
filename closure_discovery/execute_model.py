@@ -31,25 +31,11 @@ def get_args() -> argparse.Namespace:
 
 model_ids = {
     "loc": "20241201-202320", #"20241122-122518" #20241119-110929 #20241118-093042 #20241115-111342
-    "glob": "20241130-090324", #"20241127-045152" #20241126-160618 #20241126-123326 #20241123-172146 #20241118-112114,
+    "glob": "20241202-195046", #20241130-090324 #"20241127-045152" #20241126-160618 #20241126-123326 #20241123-172146 #20241118-112114,
     "interp": "20241201-202544" #"20241126-185113"
 }
 
-agents = {
-    "loc": 128,
-    "glob": 1,
-    "interp": 16,
-}
-
 INIT_DUMP = os.path.expanduser("~/CNN-MARL_closure_model_discovery/")
-
-#old local 
-#DUMP_PATH = "dump/Kolmogorov22_ppo_cgs1_fgs16/"
-#ID = "20241021-110311"
-
-#old global
-#DUMP_PATH = "dump/Kolmogorov22_global_ppo_cgs1_fgs16/"
-#ID = "20241030-115319"
 
 if __name__ == "__main__":
 
@@ -58,11 +44,6 @@ if __name__ == "__main__":
     ID = model_ids.get(test_args.setup)
     with open(INIT_DUMP+DUMP_PATH+'config_'+ID+'.pkl', 'rb') as f:
         train_args = pickle.load(f)
-
-    #TODO: this can be remove fro new setups
-    #train_args.setup = test_args.setup
-    #train_args.num_agents = agents.get(test_args.setup)
-
     
     N = test_args.lamb * 128
     num_agents = train_args.num_agents * test_args.lamb
@@ -135,8 +116,6 @@ if __name__ == "__main__":
         action = batch.act[0].detach().cpu().numpy()
         act = policy.map_action(action)
         obs, rew, terminated, truncated, inf = test_env.step(act)
-        acts.append(act)
-        states.append(obs)
         reward += rew
         if step%io_rate==0:
            #save velocity field as npy
@@ -147,6 +126,8 @@ if __name__ == "__main__":
             u1 = test_env.u1
             u1 = downsample_field(test_env.u1, test_args.lamb)
             np.save(fname, u1)
+            acts.append(act)
+            states.append(obs)
 
         if terminated or truncated:
             if terminated:
@@ -156,6 +137,4 @@ if __name__ == "__main__":
             episode_is_over = True
 
     print(f"#steps = {step}, Total Reward = {reward.mean()}")
-    print(f"states: {np.array(states).shape()}")
-    print(f"actions: {np.array(acts).mean(axis=-1)}")
     test_env.close()
