@@ -71,4 +71,3 @@ $ python measure_speedup.py
 
 
 ## Acknowledgements
-The code was build on the the 
