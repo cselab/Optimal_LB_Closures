@@ -167,8 +167,8 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
 
     def E_loss(self, means_cgs, k):
         means_diff = (np.log(means_cgs[1:]*k[1:]**5)/10) - self.means_dns
-        expo = np.max([np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff),1e-12])
-        #expo = np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff)
+        #expo = np.max([np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff),1e-12])
+        expo = np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff)
         return 1 + np.log(expo)/64
 
     

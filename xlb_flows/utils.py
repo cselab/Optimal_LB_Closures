@@ -33,6 +33,7 @@ def get_kwargs(u0_path,
     twopi = 2.0 * np.pi
     vel_ref= upsilon*0.1*(1/np.sqrt(3))
     N = int(128*lamb) # domain length in LB units
+    dx = twopi/N
     dx_eff = twopi/128 # effective space conversion factor, used in vorticity computation which is always performed on the downsampled field
     l = N/(twopi*n) # characteristic length in LB units
     visc = vel_ref * l / Re # viscosity
@@ -83,9 +84,12 @@ def get_kwargs(u0_path,
     'alpha' : alpha,
     'yy' : yy,
     'dx_eff': dx_eff,
+    'dx': dx,
     'v_max': v_max,
     'seed': seed,
     'endTime': endTime,
+    'lamb': lamb,
+    'l': l
     }
     
     return kwargs, endTime, T, N
@@ -122,6 +126,37 @@ def get_moments(f, sim):
         u = process_allgather(u)/sim.C_u
         P_neq = process_allgather(P_neq)
         return rho, u, P_neq
+
+def get_moments2(f, sim):
+        rho, u = sim.update_macroscopic(f)
+        fneq = f - sim.equilibrium(rho, u, cast_output=False)
+        P_neq = sim.momentum_flux(fneq)
+        u = process_allgather(u)/sim.C_u
+        #P_neq = process_allgather(P_neq)*(60*sim.lamb/sim.C_u)   #*(1e4/3.5) #normalization
+        P_neq = process_allgather(P_neq)*(6*sim.l/sim.C_u)
+        return u, P_neq
+
+def get_states(f, sim):
+        rho, u = sim.update_macroscopic(f)
+        fneq = f - sim.equilibrium(rho, u, cast_output=False)
+        P_neq = sim.momentum_flux(fneq)
+        rho = process_allgather(rho)
+        u = process_allgather(u)/sim.C_u
+        #P_neq = process_allgather(P_neq)*(60*sim.lamb/sim.C_u)
+        P_neq = process_allgather(P_neq)*(6*sim.l/sim.C_u)
+        w = vorticity_2d(u, sim.dx)
+        lamb1 = 0.5*w**2
+        lamb2 = ((P_neq)**2).sum(axis=-1)
+        return u, lamb1[:, :, np.newaxis], lamb2[:, :, np.newaxis]
+
+
+
+
+
+@partial(jit)
+def vorticity_2d(u, dx=1.0):
+    u_x_dy, u_y_dx = jnp.gradient(u[..., 0], dx, axis=1), jnp.gradient(u[..., 1], dx, axis=0)
+    return u_y_dx - u_x_dy
 
 
 # computes energy spectrum of a 2d velocity field
@@ -239,9 +274,3 @@ def create_and_navigate_to(folder_name):
     os.makedirs(folder_name, exist_ok=True)
     with os.scandir(folder_name):
         os.chdir(folder_name)
-
-
-@partial(jit)
-def vorticity_2d(u, dx=1.0):
-    u_x_dy, u_y_dx = jnp.gradient(u[..., 0], dx, axis=1), jnp.gradient(u[..., 1], dx, axis=0)
-    return u_y_dx - u_x_dy

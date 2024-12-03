@@ -30,6 +30,9 @@ class Kolmogorov_flow(BGKSim):
         self.alpha = kwargs.get("alpha")
         self.yy = kwargs.get("yy")
         self.dx_eff = kwargs.get("dx_eff")
+        self.dx = kwargs.get("dx")
+        self.lamb = kwargs.get("lamb")
+        self.l = kwargs.get("l")
         super().__init__(**kwargs)
 
     @property

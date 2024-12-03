@@ -117,6 +117,7 @@ class central_actor_net(nn.Module):
         logits = self.fcnn(logits)
         mu = self.mu(logits)
         sigma = self.sigma(logits)
+        sigma = torch.min(sigma, torch.full_like(sigma, 0.5))
         sigma = torch.max(sigma, torch.full_like(sigma, 1e-6))
         return (mu, sigma), state
 
@@ -173,7 +174,7 @@ class FullyConvNet_interpolating_agents(nn.Module):
         
         # Ensure output shape is (batch, N, N)
         mu, sigma = mu.reshape(batch, self.N, self.N), sigma.reshape(batch, self.N, self.N)
-        sigma = torch.max(sigma, torch.full_like(sigma, 1e-6))
+        sigma = torch.max(sigma, torch.full_like(sigma, 1e-4))
         return (mu, sigma), state
 
 
