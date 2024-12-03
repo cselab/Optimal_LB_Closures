@@ -35,9 +35,7 @@ class local_actor_net(nn.Module):
         self._initialize_weights()
 
     def _initialize_weights(self):
-        # Initialize the weights of the last layer of self.fcnn
         with torch.no_grad():
-            #self.fcnn[4].weight *= 1/100
             self.mu[0].weight *= 1/100
             self.sigma[0].weight *= 1/100
             self.sigma[0].bias.fill_(-0.9)
@@ -103,9 +101,7 @@ class central_actor_net(nn.Module):
         self._initialize_weights()
 
     def _initialize_weights(self):
-        # Initialize the weights of the last layer of self.fcnn
         with torch.no_grad():
-            #self.fcnn[4].weight *= 1/100
             self.mu[0].weight *= 1/100
             self.sigma[0].weight *= 1/100
             self.sigma[0].bias.fill_(-0.9)
