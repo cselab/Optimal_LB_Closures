@@ -34,7 +34,7 @@ A burn in simulation is used to statistically stabalize the Kolmogorov flow. Run
 $ cd xlb_flows
 $ python run_burn_in.py
 ```
-to run an XLB simulation of the 2D Kolmogorov flow for $T=645$ at resolution $N=2048$ for seeds $s \in \{102, 99, 33\}$. The final density and velocity fields will be used to initialize all future Kolmogorov flows. $s=102$ is used for training, $s=99$ for validation, and $s=33$ for testing.  This step is optional as we have included the resulting fields from the burn in simulation in [xlb_flows/init_fields](xlb_flows/init_fields).
+to run an XLB simulation of the 2D Kolmogorov flow for $T=645$ at resolution $N=2048$ for seeds $s \in \{102, 99, 33\}$. The final density and velocity fields will be used to initialize all future Kolmogorov flows. $s=102$ is used for training, $s=99$ for validation, and $s=33$ for testing.  This step is optional as we have included the resulting fields from the burn in simulation in [results/init_fields](results/init_fields).
 
 
 ## Model Training (Optional)

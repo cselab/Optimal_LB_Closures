@@ -32,7 +32,7 @@ def torch2jax(x):
 #TODO: change this after new burn in simulation
 INIT_PATH = os.path.expanduser(
     "~/CNN-MARL_closure_model_discovery/"
-    "xlb_flows/init_fields/")
+    "results/init_fields/")
 
 #INIT_PATH_SPEC = os.path.expanduser(
 #    "~/CNN-MARL_closure_model_discovery/"

@@ -46,12 +46,12 @@ if __name__ == "__main__":
     try:
         u0_path = os.path.expanduser(
              f"~/CNN-MARL_closure_model_discovery/"
-             "xlb_flows/init_fields/"
+             "results/init_fields/"
              f"velocity_kolmogorov_2d_910368_s{args.seed}.npy"
              )
         rho0_path = os.path.expanduser(
              f"~/CNN-MARL_closure_model_discovery/"
-             "xlb_flows/init_fields/"
+             "results/init_fields/"
              f"density_kolmogorov_2d_910368_s{args.seed}.npy"
              )
     except:

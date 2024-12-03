@@ -1,33 +1,18 @@
-/weights/policy_storage/
-/weights/policy_dump/
-/data/
 /.ipynb_checkpoints/
+*__pycache__/
 /profile_storage/
 /wandb/
-/test_results/
-/lib/models/pretrained/
-/sweep_configs/
 /log/
-/gifs/
-/dump/
-!/dump/Kolmogorov22_ppo_cgs1_fgs16/
 /XLB/
-/storage/
-/init_fields/
+
 /closure_discovery/log/
 /closure_discovery/wandb/
-/closure_discovery/log/
-/closure_discovery/dump/
 
-/results2/
-*/init_fields/
-*/init_fields_re1000/
-*/dns_spectra/
-*/dns_spectrum/
 /results/*
 !/results/analysis.ipynb
 !results/figures/
 
 
 
-*__pycache__/
+
+
