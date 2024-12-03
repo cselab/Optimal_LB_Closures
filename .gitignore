@@ -23,9 +23,9 @@
 */init_fields_re1000/
 */dns_spectra/
 */dns_spectrum/
-results/*
-!results/analysis.ipynb
-results/figures/model_eval.gif
+/results/*
+!/results/analysis.ipynb
+!/results/figures/model_eval.gif
 
 
 
