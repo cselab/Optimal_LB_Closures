@@ -124,93 +124,6 @@ def get_moments(f, sim):
         return rho, u, P_neq
 
 
-@partial(jit)
-def vorticity_2d(u, dx=1.0):
-    u_x_dy, u_y_dx = jnp.gradient(u[..., 0], dx, axis=1), jnp.gradient(u[..., 1], dx, axis=0)
-    return u_y_dx - u_x_dy
-
-
-@partial(jit, inline=True)
-def update_macroscopic(f, c):
-    """
-    This function computes the macroscopic variables (density and velocity) based on the 
-    distribution functions (f).
-
-    The density is computed as the sum of the distribution functions over all lattice directions. 
-    The velocity is computed as the dot product of the distribution functions and the lattice 
-    velocities, divided by the density.
-
-    Parameters
-    ----------
-    f: jax.numpy.ndarray
-        The distribution functions.
-
-    Returns
-    -------
-    rho: jax.numpy.ndarray
-        Computed density.
-    u: jax.numpy.ndarray
-        Computed velocity.
-    """
-    rho =jnp.sum(f, axis=-1, keepdims=True)
-    u = jnp.dot(f, c.T) / rho
-
-    return rho, u
-
-@partial(jit, inline=True)
-def momentum_flux(fneq, cc):
-    """
-    This function computes the momentum flux, which is the product of the non-equilibrium 
-    distribution functions (fneq) and the lattice moments (cc).
-
-    The momentum flux is used in the computation of the stress tensor in the Lattice Boltzmann 
-    Method (LBM).
-
-    Parameters
-    ----------
-    fneq: jax.numpy.ndarray
-        The non-equilibrium distribution functions.
-
-    Returns
-    -------
-    jax.numpy.ndarray
-        The computed momentum flux.
-    """
-    return jnp.dot(fneq, cc)
-
-@partial(jit, inline=True)
-def equilibrium(rho, u, c, w):
-    """
-    This function computes the equilibrium distribution function in the Lattice Boltzmann Method.
-    The equilibrium distribution function is a function of the macroscopic density and velocity.
-    The function first casts the density and velocity to the compute precision if the cast_output flag is True.
-    The function finally casts the equilibrium distribution function to the output precision if the cast_output 
-    flag is True.
-    Parameters
-    ----------
-    rho: jax.numpy.ndarray
-        The macroscopic density.
-    u: jax.numpy.ndarray
-        The macroscopic velocity.
-    cast_output: bool, optional
-        A flag indicating whether to cast the density, velocity, and equilibrium distribution function to the 
-        compute and output precisions. Default is True.
-    Returns
-    -------
-    feq: ja.numpy.ndarray
-        The equilibrium distribution function.
-    """
-
-    # Cast c to compute precision so that XLA call FXX matmul, 
-    # which is faster (it is faster in some older versions of JAX, newer versions are smart enough to do this automatically)
-    cu = 3.0 * jnp.dot(u, c)
-    usqr = 1.5 * jnp.sum(jnp.square(u), axis=-1, keepdims=True)
-    feq = rho * w * (1.0 + cu * (1.0 + 0.5 * cu) - usqr)
-
-    return feq
-
-
-
 # computes energy spectrum of a 2d velocity field
 def energy_spectrum_2d(u):
 
@@ -326,6 +239,7 @@ def create_and_navigate_to(folder_name):
     os.makedirs(folder_name, exist_ok=True)
     with os.scandir(folder_name):
         os.chdir(folder_name)
+
 
 @partial(jit)
 def vorticity_2d(u, dx=1.0):
