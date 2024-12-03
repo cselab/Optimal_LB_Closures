@@ -8,6 +8,8 @@ This repository allows to train a multi-agent reinforcement learning (MARL) agen
 As a result, the agents are able to improve the accuracy of a coarse-grained simulation (CGS) significantly.
 A qualitative example of the improvement is shown in the figure below. The CGS combined with the agents is referred to as CNN-MARL.
 
+![Alt text](results/figures/model_eval.gif)
+
 
 
 ## Getting Started
