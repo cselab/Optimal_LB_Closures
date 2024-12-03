@@ -64,13 +64,13 @@ if __name__ == "__main__":
     #######################################################################################################
     if train_args.setup == "loc":
             actor = local_actor_net(in_channels=6, device=device, nx=N).to(device)
-            critic = central_critic_net2(in_channels=6, device=device).to(device)
+            critic = central_critic_net(in_channels=6, device=device).to(device)
     elif train_args.setup == "glob":
-        actor = central_actor_net2(in_channels=6, device=device, nx=N).to(device)
-        critic = central_critic_net2(in_channels=6, device=device).to(device)
+        actor = central_actor_net(in_channels=6, device=device, nx=N).to(device)
+        critic = central_critic_net(in_channels=6, device=device).to(device)
     elif train_args.setup == "interp":
-        actor = FullyConvNet_interpolating_agents3(in_channels=6, N=num_agents, device=device, nx=N).to(device)
-        critic = central_critic_net2(in_channels=6, device=device).to(device)
+        actor = FullyConvNet_interpolating_agents(in_channels=6, N=num_agents, device=device, nx=N).to(device)
+        critic = central_critic_net(in_channels=6, device=device).to(device)
 
     actor_critic = ActorCritic(actor=actor, critic=critic)
     optim = torch.optim.AdamW(actor_critic.parameters(), lr=train_args.learning_rate, eps=train_args.adam_eps)

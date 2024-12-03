@@ -26,7 +26,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--algorithm", type=str, default="ppo")
     parser.add_argument("--environment", type=str, default="Kolmogorov")
     parser.add_argument("--setup", type=str, default="loc") #options = "loc", "glob", "interp"
-    
+
     parser.add_argument("--seed", type=int, default=42)
 
     #ENVIRONMENT ARGUMENTS 
@@ -130,13 +130,13 @@ if __name__ == '__main__':
     #initialize networks
     if args.setup == "loc":
         actor = local_actor_net(in_channels=6, device=device).to(device)
-        critic = central_critic_net2(in_channels=6, device=device).to(device)
+        critic = central_critic_net(in_channels=6, device=device).to(device)
     elif args.setup == "glob":
-        actor = central_actor_net2(in_channels=6, device=device).to(device)
-        critic = central_critic_net2(in_channels=6, device=device).to(device)
+        actor = central_actor_net(in_channels=6, device=device).to(device)
+        critic = central_critic_net(in_channels=6, device=device).to(device)
     elif args.setup == "interp":
-        actor = FullyConvNet_interpolating_agents3(in_channels=6, N=args.num_agents, device=device).to(device)
-        critic = central_critic_net2(in_channels=6, device=device).to(device)
+        actor = FullyConvNet_interpolating_agents(in_channels=6, N=args.num_agents, device=device).to(device)
+        critic = central_critic_net(in_channels=6, device=device).to(device)
 
     actor_critic = ActorCritic(actor=actor, critic=critic)
 
