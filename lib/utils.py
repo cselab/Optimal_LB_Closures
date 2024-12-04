@@ -1,10 +1,8 @@
-import torch
-import torchvision
-import argparse
 from abc import ABC, abstractmethod
 from datetime import datetime
-import wandb
+import pickle
 import os
+
 
 
 class Config(ABC):
@@ -77,59 +75,15 @@ def save_dict_to_file(dict_obj, filename):
             f.write(f'{key}: {value}\n')
 
 
-def log_img_to_wandb(img: torch.Tensor,
-                     input: torch.Tensor,
-                     output: torch.Tensor,
-                     keyword: str):
-    img_sample, input_sample, output_sample = detach_move_tensors_to_cpu(img[0, 0], input[0, 0], output[0, 0])
-    wandb.log({f"{keyword} training correction: target | pred": [create_image_from_tensor(img_sample - input_sample),
-                                                      create_image_from_tensor(output_sample - input_sample)]})
-    wandb.log({f"{keyword} prediction: input | pred | target": [create_image_from_tensor(input_sample),
-                                                              create_image_from_tensor(output_sample),
-                                                              create_image_from_tensor(img_sample)]})
-    wandb.log({f"{keyword} error map:": create_image_from_tensor((img_sample - output_sample) ** 2)})
+def save_batch_to_file(batch_obj, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(batch_obj, f)
 
 
-def create_image_from_tensor(tensor: torch.Tensor):
-    return wandb.Image(tensor)
+def model_name(config):
+    # creates a name from the relevant hyperparameters
+    setup_name = f"{config.environment}_{config.setup}_{config.algorithm}"
+    if not os.path.exists("../results/weights/"+setup_name):
+        os.makedirs("../results/weights/"+setup_name)
 
-
-def dict_to_wandb_table(config: dict):
-    table = wandb.Table(columns=["Hyperparameter", "Value"])
-    for key, value in config.items():
-        table.add_data(key, str(value))
-    wandb.log({'Config': table})
-
-
-def sample_from_dataloader(dataiter, dataloader):
-    try:
-        _sample = next(dataiter)
-    except StopIteration:
-        dataiter = iter(dataloader)
-        _sample = next(dataiter)
-    return _sample, dataiter
-
-
-def detach_move_tensors_to_cpu(*tensors):
-    torchvision.transforms.ToPILImage()
-    return (t.cpu().detach()for t in tensors)
-
-
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'True', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'False',  'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
-
-def restrict_to_num_threads(num_threads: int):
-    # Specify the number of cores you want to use
-    os.environ["OMP_NUM_THREADS"] = str(num_threads)
-    os.environ["MKL_NUM_THREADS"] = str(num_threads)
-    # Also consider limiting the number of threads PyTorch can use internally for its operations
-    torch.set_num_threads(num_threads)
-
+    return "../results/weights/"+setup_name
