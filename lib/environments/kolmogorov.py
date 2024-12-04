@@ -95,7 +95,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         self.means_dns = np.load(INIT_PATH_SPEC+'dns_mean_scaled.npy')
-        stds_dns = np.load(INIT_PATH_SPEC+'dns_std_scaled.npy')
+        stds_dns = np.load(INIT_PATH_SPEC+'dns_std_scaled2.npy')
         stds_dns = np.abs(stds_dns)
         self.cov_inverse = np.diag(1/stds_dns)
     
