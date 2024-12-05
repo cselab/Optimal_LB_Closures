@@ -117,7 +117,7 @@ class central_actor_net(nn.Module):
         logits = self.fcnn(logits)
         mu = self.mu(logits)
         sigma = self.sigma(logits)
-        sigma = torch.min(sigma, torch.full_like(sigma, 0.5))
+        sigma = torch.min(sigma, torch.full_like(sigma, 1.))
         sigma = torch.max(sigma, torch.full_like(sigma, 1e-6))
         return (mu, sigma), state
 
