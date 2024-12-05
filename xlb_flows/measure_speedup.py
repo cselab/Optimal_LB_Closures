@@ -68,22 +68,21 @@ RL_times = np.array(RL_times)
 #lamb = np.array([1, 2, 4, 8])
 
 # Plotting
-RL_names = ["128RL", "256RL", "512RL", "1024RL"]
+RL_names = ["128", "256", "512", "1024"]
 CGS_names = ["256", "512", "1024", "2048"]
 
 plt.figure(figsize=(10, 6))
-plt.plot(lambs, RL_times, 'o-', label='RL', color='blue')
-plt.plot(lambs, CGS_times, 's-', label='CGS', color='orange')
+plt.plot(lambs, RL_times, 'o-', label='ReLBM', color='#d62728')
+plt.plot(lambs, CGS_times, 's-', label='LBGK', color='#1f77b4')
 
 # Adding labels to each point
 for i, (x, y, rl_name, cgs_name) in enumerate(zip(lambs, RL_times, RL_names, CGS_names)):
-    plt.text(x, y, rl_name, color='blue', ha='right', va='bottom')
-    plt.text(x, CGS_times[i], cgs_name, color='orange', ha='right', va='top')
+    plt.text(x, y, rl_name, color='#d62728', ha='right', va='bottom')
+    plt.text(x, CGS_times[i], cgs_name, color='#1f77b4', ha='right', va='top')
 
 # Labels and title
 plt.xlabel('Grid scaling (λ)')
 plt.ylabel('Execution Time (seconds)')
-plt.title('Execution Time Comparison: RL vs. CGS')
 plt.legend()
 plt.grid(True)
 plt.yscale("log")  # Log scale for better visibility of data spread
