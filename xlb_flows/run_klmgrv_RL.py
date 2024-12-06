@@ -9,7 +9,7 @@ from XLB.src.lattice import LatticeD2Q9
 from xlb_flows.utils import *
 from xlb_flows.kolmogorov_2d import *
 
-from lib.models import local_actor_net_fast
+from lib.models import local_actor_net
 from collections import OrderedDict
 
 import jax
@@ -162,14 +162,13 @@ if __name__ == "__main__":
     flow_class = flow_classes.get(flow_type)
 
     #get acotor:
-    DUMP_PATH = "../dump/Kolmogorov22_ppo_cgs1_fgs16/"
-    ID = "20241021-110311"
+    DUMP_PATH = "../results/weights/Kolmogorov_loc_ppo/"
+    ID = "20241205-135557"
     
-    #actor = FullyConvNet_interpolating_agents(in_channels=6, N=args.num_agents, device=device).to(device)
-    actor = local_actor_net_fast(in_channels=6, device=device, nx=(128*args.lamb)).to(device)
+    actor = local_actor_net(in_channels=6, device=device, nx=(128*args.lamb)).to(device)
     #load actor from state_dict
     actor_parameters = OrderedDict()
-    state_dict = torch.load(DUMP_PATH+'policy_'+ID+'.pth')
+    state_dict = torch.load(DUMP_PATH+'best_policy_'+ID+'.pth')
     for key, value in state_dict.items():
         if key.startswith("actor."):
             new_key = key.replace("actor.", "")

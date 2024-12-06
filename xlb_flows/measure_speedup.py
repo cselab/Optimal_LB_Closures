@@ -6,7 +6,7 @@ from tqdm import tqdm
 # Seed and common parameters
 seed = 33
 T = 100
-DEVICE = 2  # For execution on multiple GPUs, adjust this number as needed
+DEVICE = 3  # For execution on multiple GPUs, adjust this number as needed
 
 
 def run_command(command):
@@ -26,8 +26,17 @@ def run_command(command):
 CGS_times = []
 RL_times = []
 
-# Commands for CGS
+# Commands for ClosureRL
+# Assuming `T`, `seed`, and `lambs` are already defined
 lambs = np.array([1, 2, 4, 8])
+RL_commands = [
+    (f"CUDA_VISIBLE_DEVICES={DEVICE} PYTHONPATH=..:../XLB python "
+     f"run_klmgrv_RL.py --flow 'Kolmogorov' --model 'ClosureRL' --measure_speedup 1 "
+     f"--t_wish {T} --lamb {scale_factor} --seed {seed}")
+    for scale_factor in lambs
+]
+
+# Commands for CGS
 CGS_commands = [
     (f"CUDA_VISIBLE_DEVICES={DEVICE} PYTHONPATH=..:../XLB python "
      f"run_klmgrv.py --flow 'Kolmogorov' --measure_speedup 1 "
@@ -35,14 +44,14 @@ CGS_commands = [
     for scale_factor in lambs
 ]
 
-# Commands for ClosureRL
-# Assuming `T`, `seed`, and `lambs` are already defined
-RL_commands = [
-    (f"CUDA_VISIBLE_DEVICES={DEVICE} PYTHONPATH=..:../XLB python "
-     f"run_klmgrv_RL.py --flow 'Kolmogorov_ClosureRL' --measure_speedup 1 "
-     f"--t_wish {T} --lamb {scale_factor} --seed {seed}")
-    for scale_factor in lambs
-]
+# Run RL commands and store execution times
+print("running ClosureRL")
+for command in tqdm(RL_commands):
+    time_taken = run_command(command)
+    if time_taken is not None:
+        RL_times.append(time_taken)
+    else:
+        print(f"Failed to get execution time for command: {command}")
 
 # Run CGS commands and store execution times
 print("running CGS")
@@ -50,15 +59,6 @@ for command in tqdm(CGS_commands):
     time_taken = run_command(command)
     if time_taken is not None:
         CGS_times.append(time_taken)
-    else:
-        print(f"Failed to get execution time for command: {command}")
-
-# Run RL commands and store execution times
-print("running ClosureRL")
-for command in tqdm(RL_commands):
-    time_taken = run_command(command)
-    if time_taken is not None:
-        RL_times.append(time_taken)
     else:
         print(f"Failed to get execution time for command: {command}")
 
@@ -71,6 +71,7 @@ RL_times = np.array(RL_times)
 RL_names = ["128", "256", "512", "1024"]
 CGS_names = ["256", "512", "1024", "2048"]
 
+plt.rcParams.update({'font.size': 14})
 plt.figure(figsize=(10, 6))
 plt.plot(lambs, RL_times, 'o-', label='ReLBM', color='#d62728')
 plt.plot(lambs, CGS_times, 's-', label='LBGK', color='#1f77b4')
@@ -87,4 +88,4 @@ plt.legend()
 plt.grid(True)
 plt.yscale("log")  # Log scale for better visibility of data spread
 plt.tight_layout()
-plt.savefig("execution_time_comparison.png")  # Save the plot to a file
+plt.savefig("../results/figures/execution_time_comparison.png")  # Save the plot to a file
