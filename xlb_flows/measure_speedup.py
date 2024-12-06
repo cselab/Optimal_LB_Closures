@@ -79,7 +79,7 @@ plt.plot(lambs, CGS_times, 's-', label='LBGK', color='#1f77b4')
 # Adding labels to each point
 for i, (x, y, rl_name, cgs_name) in enumerate(zip(lambs, RL_times, RL_names, CGS_names)):
     plt.text(x, y, rl_name, color='#d62728', ha='right', va='bottom')
-    plt.text(x, CGS_times[i], cgs_name, color='#1f77b4', ha='right', va='top')
+    plt.text(x, CGS_times[i], cgs_name, color='#1f77b4', ha='right', va='bottom')
 
 # Labels and title
 plt.xlabel('Grid scaling (λ)')
