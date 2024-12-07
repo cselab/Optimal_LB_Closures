@@ -30,9 +30,9 @@ def get_args() -> argparse.Namespace:
     return parser.parse_known_args()[0]
 
 model_ids = {
-    "loc": "20241201-202320", #"20241122-122518" #20241119-110929 #20241118-093042 #20241115-111342
-    "glob": "20241203-070853", #20241202-195046 #20241130-090324 #"20241127-045152" #20241126-160618 #20241126-123326 #20241123-172146 #20241118-112114,
-    "interp": "20241203-070735"  #20241201-202544 #"20241126-185113"
+    "loc": "20241205-135557", 
+    "glob": "20241206-121705", 
+    "interp": "20241206-062003"
 }
 
 INIT_DUMP = os.path.expanduser("~/CNN-MARL_closure_model_discovery/")
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                  print("terminated")
             else:
                 print("truncated")
-            episode_is_over = True
+            break
 
     print(f"#steps = {step}, Total Reward = {reward.mean()}")
     test_env.close()

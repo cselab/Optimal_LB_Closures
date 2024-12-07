@@ -79,6 +79,7 @@ class central_actor_net(nn.Module):
                        padding=1, dilation=1, bias=True, padding_mode=padding_mode),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2,2),
+            nn.MaxPool2d(kernel_size=self.nx//128, stride=self.nx//128)
         )
 
         self.fcnn = nn.Sequential(
@@ -118,7 +119,7 @@ class central_actor_net(nn.Module):
         mu = self.mu(logits)
         sigma = self.sigma(logits)
         sigma = torch.min(sigma, torch.full_like(sigma, 0.5))
-        sigma = torch.max(sigma, torch.full_like(sigma, 1e-6))
+        sigma = torch.max(sigma, torch.full_like(sigma, 1e-2))
         return (mu, sigma), state
 
 
