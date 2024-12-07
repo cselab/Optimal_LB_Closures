@@ -38,6 +38,23 @@ to run an XLB simulation of the 2D Kolmogorov flow for $T=645$ at resolution $N=
 
 
 ## Model Training (Optional)
+To reproduce the training of the policies run:
+```console
+cd closure_discovery
+````
+Global:
+```console
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_ppo.py --max_epoch 100 --steup "glob" --num_agents 1 --ent_coef -0.005 --seed 66
+```
+Local:
+```console
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_ppo.py --max_epoch 300 --steup "loc" --num_agents 128 --lr_decay 1 --seed 44
+```
+Interpolating:
+```console
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_ppo.py --max_epoch 200 --steup "interp" --num_agents 16 --seed 33
+```
+This steps are optional as we provided the weights of the trained models in [results/weights](results/weights).
 
 
 ## Model Testing

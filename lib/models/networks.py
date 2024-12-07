@@ -22,7 +22,6 @@ class local_actor_net(nn.Module):
                        padding=0, bias=True),
             nn.ReLU(inplace=True),
         )
-        
 
         self.mu = nn.Sequential(nn.Conv2d(in_channels=feature_dim, out_channels=out_channels, kernel_size=1, stride=1,
                        padding=0, bias=True),
@@ -120,7 +119,7 @@ class central_actor_net(nn.Module):
         mu = self.mu(logits)
         sigma = self.sigma(logits)
         sigma = torch.min(sigma, torch.full_like(sigma, 0.5))
-        sigma = torch.max(sigma, torch.full_like(sigma, 1e-1))
+        sigma = torch.max(sigma, torch.full_like(sigma, 1e-2))
         return (mu, sigma), state
 
 
