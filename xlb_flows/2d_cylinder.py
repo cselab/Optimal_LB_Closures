@@ -32,6 +32,7 @@ from XLB.src.utils import *
 from XLB.src.boundary_conditions import *
 from XLB.src.models import BGKSim
 from XLB.src.lattice import LatticeD2Q9
+from xlb_flows.utils import vorticity_2d
 
 # Use 8 CPU devices
 # os.environ["XLA_FLAGS"] = '--xla_force_host_platform_device_count=8'
