@@ -26,6 +26,21 @@ print("Time to create the grid mask:", time.time() - start)
 print("Time to create the local masks and normal arrays:", time.time() - start)
 
 ```
+### Install Requirements
+For example as python venv:
+```console
+python -m venv <env_name>
+source <env_name>/bin/activate
+pip install -r requirements.txt
+```
+Install Jax:
+```Console
+python -m pip install -U "jax[cuda12]"
+```
+Install Torch for CUDA 12.6, which is currently a nightly build. Check [torch](https://pytorch.org/get-started/locally/) for updates.
+```console
+pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu126
+```
 
 ## Setup (Optional)
 ### 1. Burn in simulation
