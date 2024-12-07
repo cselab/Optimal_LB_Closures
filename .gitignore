@@ -8,7 +8,6 @@
 /closure_discovery/log/
 /closure_discovery/wandb/
 
-/results/weights/*
 /results/re*
 
 
