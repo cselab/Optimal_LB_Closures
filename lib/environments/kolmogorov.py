@@ -95,7 +95,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
         self.f1 = self.cgs.assign_fields_sharded()
         self.rho1, self.u1, self.P_neq1 = get_moments(self.f1, self.cgs)
         self.means_dns = np.load(INIT_PATH_SPEC+'dns_mean_scaled.npy')
-        stds_dns = np.load(INIT_PATH_SPEC+'dns_std_scaled2.npy')
+        stds_dns = np.load(INIT_PATH_SPEC+'dns_std_scaled_posterior.npy')
         stds_dns = np.abs(stds_dns)
         self.cov_inverse = np.diag(1/stds_dns)
     
@@ -167,7 +167,7 @@ class KolmogorovEnvironment(BaseEnvironment, ABC):
 
     def E_loss(self, means_cgs, k):
         means_diff = (np.log(means_cgs[1:]*k[1:]**5)/10) - self.means_dns
-        #expo = np.max([np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff),1e-12])
+        #expo = np.max([np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff),1e-6])
         expo = np.exp(-0.5 * means_diff.T @ self.cov_inverse @ means_diff)
         return 1 + np.log(expo)/64
 

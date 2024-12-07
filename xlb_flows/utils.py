@@ -18,7 +18,7 @@ from XLB.src.boundary_conditions import *
 from XLB.src.lattice import LatticeD2Q9
 
 
-#create kwargs for dataset creating e.g. for supervised learning
+#create kwargs for 2d Kolmogorov XLB simulation
 def get_kwargs(u0_path,
                 rho0_path,
                 T_wish=18,
@@ -91,9 +91,7 @@ def get_kwargs(u0_path,
     'lamb': lamb,
     'l': l
     }
-    
     return kwargs, endTime, T, N
-
 
 
 def get_velocity(f, sim):
@@ -127,6 +125,8 @@ def get_moments(f, sim):
         P_neq = process_allgather(P_neq)
         return rho, u, P_neq
 
+
+#transforms P_neq to approximately normalized and resolution independent scalle
 def get_moments2(f, sim):
         rho, u = sim.update_macroscopic(f)
         fneq = f - sim.equilibrium(rho, u, cast_output=False)
@@ -136,21 +136,19 @@ def get_moments2(f, sim):
         P_neq = process_allgather(P_neq)*(6*sim.l/sim.C_u)
         return u, P_neq
 
+
+# computes gallilean invariant states of 2d velocity field
 def get_states(f, sim):
         rho, u = sim.update_macroscopic(f)
         fneq = f - sim.equilibrium(rho, u, cast_output=False)
         P_neq = sim.momentum_flux(fneq)
         rho = process_allgather(rho)
         u = process_allgather(u)/sim.C_u
-        #P_neq = process_allgather(P_neq)*(60*sim.lamb/sim.C_u)
         P_neq = process_allgather(P_neq)*(6*sim.l/sim.C_u)
         w = vorticity_2d(u, sim.dx)
         lamb1 = 0.5*w**2
         lamb2 = ((P_neq)**2).sum(axis=-1)
         return u, lamb1[:, :, np.newaxis], lamb2[:, :, np.newaxis]
-
-
-
 
 
 @partial(jit)
@@ -161,7 +159,6 @@ def vorticity_2d(u, dx=1.0):
 
 # computes energy spectrum of a 2d velocity field
 def energy_spectrum_2d(u):
-
     n_x, n_y, _ = u.shape
     nn = max(n_x,n_y)
     uh = np.fft.ifft2(u[...,0],norm='backward')
@@ -177,9 +174,7 @@ def energy_spectrum_2d(u):
         k = ks[i]
         mask = (knorm > k-0.5) & (knorm <= k+0.5)
         Ek[i] = np.mean(E_k[mask])
-
     return ks, 2*np.pi*Ek
-
 
 
 @partial(jit, static_argnums=(1, 2))
