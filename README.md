@@ -26,6 +26,21 @@ print("Time to create the grid mask:", time.time() - start)
 print("Time to create the local masks and normal arrays:", time.time() - start)
 
 ```
+### Install Requirements
+For example as python venv:
+```console
+python -m venv <env_name>
+source <env_name>/bin/activate
+pip install -r requirements.txt
+```
+Install Jax:
+```Console
+python -m pip install -U "jax[cuda12]"
+```
+Install Torch for CUDA 12.6, which is currently a nightly build. Check [torch](https://pytorch.org/get-started/locally/) for updates.
+```console
+pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu126
+```
 
 ## Setup (Optional)
 ### 1. Burn in simulation
@@ -44,15 +59,15 @@ cd closure_discovery
 ````
 Global:
 ```console
-CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 100 --steup "glob" --num_agents 1 --ent_coef -0.01 --seed 66
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 100 --setup "glob" --num_agents 1 --ent_coef -0.01 --seed 66
 ```
 Local:
 ```console
-CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 300 --steup "loc" --num_agents 128 --lr_decay 1 --seed 44
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 300 --setup "loc" --num_agents 128 --lr_decay 1 --seed 44
 ```
 Interpolating:
 ```console
-CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 200 --steup "interp" --num_agents 16 --seed 33
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 200 --setup "interp" --num_agents 16 --seed 33
 ```
 This steps are optional as we provided the weights of the trained models in [results/weights](results/weights).
 
