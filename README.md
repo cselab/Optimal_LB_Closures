@@ -44,15 +44,15 @@ cd closure_discovery
 ````
 Global:
 ```console
-CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 100 --steup "glob" --num_agents 1 --ent_coef -0.01 --seed 66
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 100 --setup "glob" --num_agents 1 --ent_coef -0.01 --seed 66
 ```
 Local:
 ```console
-CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 300 --steup "loc" --num_agents 128 --lr_decay 1 --seed 44
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 300 --setup "loc" --num_agents 128 --lr_decay 1 --seed 44
 ```
 Interpolating:
 ```console
-CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 200 --steup "interp" --num_agents 16 --seed 33
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=..:../XLB python rl_klmgrv_PPO.py --max_epoch 200 --setup "interp" --num_agents 16 --seed 33
 ```
 This steps are optional as we provided the weights of the trained models in [results/weights](results/weights).
 
