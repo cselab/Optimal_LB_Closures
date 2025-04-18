@@ -35,7 +35,7 @@ model_ids = {
     "interp": "20241206-062003"
 }
 
-INIT_DUMP = os.path.expanduser("~/CNN-MARL_closure_model_discovery/")
+INIT_DUMP = os.path.expanduser("~/Optimal_LB_Closures/")
 
 if __name__ == "__main__":
 
