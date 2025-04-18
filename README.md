@@ -1,7 +1,7 @@
-# Adaptive Closure Modeling for Lattice Boltzmann Methods using Multi-Agent Reinforcement Learning
+# Optimal Lattice Boltzmann Closures through Multi-Agent Reinforcement Learning
 
 ## Description
-This is the official implementation of the MSc thesis *Adaptive Closure Modeling for Lattice Boltzmann Methods using Multi-Agent Reinforcement Learning*.
+This is the official implementation for the paper *Optimal Lattice Boltzmann Closures through Multi-Agent Reinforcement Learning*.
 
 Reinforcement Learning (RL) is used for automatic discovery of hybrid turbulence models for Lattice Boltzmann Methods (LBM). LBM offers advantages such as easy access to macroscopic flow features and its complete locality, which allows efficient parallelization. RL eliminates the need for costly direct numerical simulation data during training by using an energy spectrum similarity measure as a reward. We have implemented several multi-agent RL models (ReLBM) with fully convolutional networks, achieving stabilization of turbulent 2D Kolmogorov flows and more accurate energy spectra than traditional LBM turbulence models. An example of the performance of a ReLBM at resolution $N = 128$, compared to a coarse LBGK simulation (128_BGK) and a resolved direct numerical simulation (2048_GK), is shown below. For RL training we used [Tianshou](https://tianshou.org/en/stable/) and for the LBM simulations we used [XLB](https://github.com/Autodesk/XLB). 
 
@@ -13,8 +13,8 @@ Reinforcement Learning (RL) is used for automatic discovery of hybrid turbulence
 
 Clone repository and import XLB
 ```console
-$ git clone git@github.com:cselab/CNN-MARL_closure_model_discovery.git
-$ cd CNN-MARL_closure_model_discovery
+$ git clone git@github.com:cselab/Optimal_LB_Closures.git
+$ cd Optimal_LB_Closures
 $ git clone git@github.com:Autodesk/XLB.git -b main-old
 ```
 To disable print statements in XLB, optionally modify `XLB/src/base.py` by removing or commenting out:
